@@ -13,10 +13,13 @@ void DefferdTest::createCbvHeap()
 		D3D12_DESCRIPTOR_HEAP_FLAG_SHADER_VISIBLE,
 		0
 	};
+	MyDX12::DescriptorHeap::Builder builder;
+	builder.setDevice(m_device.Get()).
+		setHeapType(D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV).
+		setSize(CB_HEAP_SIZE).
+		setFlagsShaderVisible();
 
-	m_device->CreateDescriptorHeap(&cbvHeapDesc, IID_PPV_ARGS(&m_cbvHeap));
-	m_cbvDiscriptorSize = m_device->GetDescriptorHandleIncrementSize(D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV);
-
+	m_cbvsrvHeap = MyDX12::DescriptorHeap::Create(builder);
 }
 void DefferdTest::createLight()
 {
@@ -28,14 +31,28 @@ void DefferdTest::createLight()
 	cbDesc.BufferLocation = m_lightBuffer->GetGPUVirtualAddress();
 	cbDesc.SizeInBytes = bufferSize;
 
-	CD3DX12_CPU_DESCRIPTOR_HANDLE cpuHandle(m_cbvHeap->GetCPUDescriptorHandleForHeapStart(), LIGHT_BUFFER_INDEX, m_cbvDiscriptorSize);
-
-	m_device->CreateConstantBufferView(&cbDesc, cpuHandle);
-
-	m_lightBufferView = CD3DX12_GPU_DESCRIPTOR_HANDLE(m_cbvHeap->GetGPUDescriptorHandleForHeapStart(), LIGHT_BUFFER_INDEX, m_cbvDiscriptorSize);
+	m_cbvsrvHeap->createConstantBufferView(&cbDesc, LIGHT_BUFFER_START_INDEX);
+	m_lightBufferView = m_cbvsrvHeap->getGPUHandle(LIGHT_BUFFER_START_INDEX);
 
 }
-void DefferdTest::createMaterial() {
+void DefferdTest::createModel()
+{
+	using namespace DirectX;
+
+	ModelCb model{};
+	XMStoreFloat4x4(&model.model, XMMatrixRotationAxis(XMVectorSet(0.0f, 1.0f, 0.0f, 0.0f), XMConvertToRadians(45.0f)));
+	UINT bufferSize = alignedBufferSizeOf(sizeof(ModelCb));
+	m_modelBuffer = CreateBuffer(bufferSize, &model);
+
+	D3D12_CONSTANT_BUFFER_VIEW_DESC cbDesc{};
+	cbDesc.BufferLocation = m_modelBuffer->GetGPUVirtualAddress();
+	cbDesc.SizeInBytes = bufferSize;
+
+	m_cbvsrvHeap->createConstantBufferView(&cbDesc, MODEL_BUFFER_START_INDEX);
+	m_modelBufferView = m_cbvsrvHeap->getGPUHandle(MODEL_BUFFER_START_INDEX);
+}
+void DefferdTest::createMaterial() 
+{
 
 	MaterialCb material = { {0.9f,0.0f,0.0f},1.0f,1.0f,1.0f };
 	UINT bufferSize = alignedBufferSizeOf(sizeof(MaterialCb));
@@ -45,45 +62,41 @@ void DefferdTest::createMaterial() {
 	cbDesc.BufferLocation = m_materialBuffer->GetGPUVirtualAddress();
 	cbDesc.SizeInBytes = bufferSize;
 
-	CD3DX12_CPU_DESCRIPTOR_HANDLE cpuHandle(m_cbvHeap->GetCPUDescriptorHandleForHeapStart(), MATERIAL_BUFFER_INDEX, m_cbvDiscriptorSize);
-
-	m_device->CreateConstantBufferView(&cbDesc, cpuHandle);
-
-	m_materialBufferView = CD3DX12_GPU_DESCRIPTOR_HANDLE(m_cbvHeap->GetGPUDescriptorHandleForHeapStart(), MATERIAL_BUFFER_INDEX, m_cbvDiscriptorSize);
+	m_cbvsrvHeap->createConstantBufferView(&cbDesc, MATERIAL_BUFFER_START_INDEX);
+	m_materialBufferView = m_cbvsrvHeap->getGPUHandle(MATERIAL_BUFFER_START_INDEX);
 }
-void DefferdTest::createMvp()
+void DefferdTest::createViewProjection()
 {
-	m_mvpBuffers.resize(FRAME_BUFFER_COUNT);
-	m_mvpBufferViews.resize(FRAME_BUFFER_COUNT);
+	m_viewProjectionBuffers.resize(FRAME_BUFFER_COUNT);
+	m_viewProjectionBufferViews.resize(FRAME_BUFFER_COUNT);
 	for (int i = 0; i < FRAME_BUFFER_COUNT; i++)
 	{
 		using namespace DirectX;
 
 		//各行列のセット.
-		MVPCb mvp;
-		XMStoreFloat4x4(&mvp.model, XMMatrixRotationAxis(XMVectorSet(0.0f, 1.0f, 0.0f, 0.0f), XMConvertToRadians(45.0f)));
+		ViewProjectionCb vp;
+		auto eyePos = XMVectorSet(0.0f, 3.0f, -5.0f, 0.0f);
+		XMStoreFloat3(&vp.cameraPos, eyePos);
 		auto mtxView = XMMatrixLookAtLH(
-			XMVectorSet(0.0f, 3.0f, -5.0f, 0.0f),
+			eyePos,
 			XMVectorSet(0.0f, 0.0f, 0.0f, 0.0f),
 			XMVectorSet(0.0f, 1.0f, 0.0f, 0.0f)
 		);
 		auto mtxProj = XMMatrixPerspectiveFovLH(XMConvertToRadians(45.0f), 480.0f / 360.0f, 0.1f, 100.0f);
-		XMStoreFloat4x4(&mvp.view, XMMatrixTranspose(mtxView));
-		XMStoreFloat4x4(&mvp.projection, XMMatrixTranspose(mtxProj));
+		XMStoreFloat4x4(&vp.view, XMMatrixTranspose(mtxView));
+		XMStoreFloat4x4(&vp.projection, XMMatrixTranspose(mtxProj));
 		;
 
-		UINT bufferSize = alignedBufferSizeOf(sizeof(MVPCb));
-		m_mvpBuffers[i] = CreateBuffer(bufferSize, &mvp);
+		UINT bufferSize = alignedBufferSizeOf(sizeof(ViewProjectionCb));
+		m_viewProjectionBuffers[i] = CreateBuffer(bufferSize, &vp);
 
 		D3D12_CONSTANT_BUFFER_VIEW_DESC cbDesc{};
-		cbDesc.BufferLocation = m_mvpBuffers[i]->GetGPUVirtualAddress();
+		cbDesc.BufferLocation = m_viewProjectionBuffers[i]->GetGPUVirtualAddress();
 		cbDesc.SizeInBytes = bufferSize;
 
-		CD3DX12_CPU_DESCRIPTOR_HANDLE cpuHandle(m_cbvHeap->GetCPUDescriptorHandleForHeapStart(), MVP_BUFFER_START_INDEX + i, m_cbvDiscriptorSize);
+		m_cbvsrvHeap->createConstantBufferView(&cbDesc, VIEW_PROJECTION_BUFFER_START_INDEX + i);
 
-		m_device->CreateConstantBufferView(&cbDesc, cpuHandle);
-
-		m_mvpBufferViews[i] = CD3DX12_GPU_DESCRIPTOR_HANDLE(m_cbvHeap->GetGPUDescriptorHandleForHeapStart(), MVP_BUFFER_START_INDEX +i, m_cbvDiscriptorSize);
+		m_viewProjectionBufferViews[i] = m_cbvsrvHeap->getGPUHandle(VIEW_PROJECTION_BUFFER_START_INDEX + i);
 	}
 
 }
@@ -186,21 +199,24 @@ void DefferdTest::createIndices()
 	m_indexBufferView.SizeInBytes = sizeof(indices);
 	m_indexBufferView.Format = DXGI_FORMAT_R32_UINT;
 	
-	m_indexCount = sizeof(indices);
+	m_indexCount =  _countof(indices);
 }
 
 void DefferdTest::createRootSigunature()
 {
-	CD3DX12_DESCRIPTOR_RANGE light, mvp, material;
+	CD3DX12_DESCRIPTOR_RANGE light, mvp, material,model;
 	light.Init(D3D12_DESCRIPTOR_RANGE_TYPE_CBV, 1, 0);
 	mvp.Init(D3D12_DESCRIPTOR_RANGE_TYPE_CBV, 1, 1);
     material.Init(D3D12_DESCRIPTOR_RANGE_TYPE_CBV, 1, 2);
+	model.Init(D3D12_DESCRIPTOR_RANGE_TYPE_CBV, 1, 3);
 
-	CD3DX12_ROOT_PARAMETER rootParams[3];
+	CD3DX12_ROOT_PARAMETER rootParams[4]{};
 
 	rootParams[0].InitAsDescriptorTable(1, &light);
 	rootParams[1].InitAsDescriptorTable(1, &mvp);
 	rootParams[2].InitAsDescriptorTable(1, &material);
+	rootParams[3].InitAsDescriptorTable(1, &model);
+
 
 	CD3DX12_ROOT_SIGNATURE_DESC desc;
 
@@ -296,12 +312,14 @@ void DefferdTest::prepare()
 	createPipeLine();
 	createCbvHeap();
 	createLight();
+	createViewProjection();
 	createMaterial();
-	createMvp();
+	createModel();
 }
 
 void DefferdTest::cleanup()
 {
+	m_basePipeline->Release();
 }
 
 void DefferdTest::MakeCommand(ComPtr<ID3D12GraphicsCommandList>& command)
@@ -312,7 +330,7 @@ void DefferdTest::MakeCommand(ComPtr<ID3D12GraphicsCommandList>& command)
 	command->RSSetViewports(1, &m_viewport);
 	command->RSSetScissorRects(1, &m_scissorRect);
 
-	ID3D12DescriptorHeap* heaps[] = { m_cbvHeap.Get() };
+	ID3D12DescriptorHeap * heaps[] = { m_cbvsrvHeap->getRaw()};
 	command->SetDescriptorHeaps(_countof(heaps), heaps);
 
 	command->IASetPrimitiveTopology(D3D_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
@@ -320,8 +338,10 @@ void DefferdTest::MakeCommand(ComPtr<ID3D12GraphicsCommandList>& command)
 	command->IASetIndexBuffer(&m_indexBufferView);
 
 	command->SetGraphicsRootDescriptorTable(0, m_lightBufferView);
-	command->SetGraphicsRootDescriptorTable(1, m_mvpBufferViews[m_frameIndex]);
+	command->SetGraphicsRootDescriptorTable(1, m_viewProjectionBufferViews[m_frameIndex]);
 	command->SetGraphicsRootDescriptorTable(2, m_materialBufferView);
+	command->SetGraphicsRootDescriptorTable(3,m_modelBufferView);
+
 
 	command->DrawIndexedInstanced(m_indexCount,1,0,0,0);
 	

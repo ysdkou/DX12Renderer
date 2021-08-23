@@ -7,7 +7,7 @@ cbuffer Light: register(b0) {
 	float3 color;
 };
 
-cbuffer Matria:register(b2)
+cbuffer Matrial:register(b2)
 {
 	float3 albedo;
 	float metallic;
