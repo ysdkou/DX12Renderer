@@ -147,24 +147,30 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
+    <ClInclude Include="ConstantBuffer.h" />
     <ClInclude Include="d3dx12.h" />
     <ClInclude Include="DefferdRenderer.h" />
     <ClInclude Include="DescriptorHeap.h" />
     <ClInclude Include="DX12App.h" />
     <ClInclude Include="DXGIFactory.h" />
+    <ClInclude Include="IndexBuffer.h" />
     <ClInclude Include="ScreenQuadRenderer.h" />
     <ClInclude Include="ShaderCompile.h" />
     <ClInclude Include="stb_image.h" />
     <ClInclude Include="TriangleApp.h" />
+    <ClInclude Include="VertexBuffer.h" />
   </ItemGroup>
   <ItemGroup>
+    <ClCompile Include="ConstantBuffer.cpp" />
     <ClCompile Include="DefferdRenderer.cpp" />
     <ClCompile Include="DescriptorHeap.cpp" />
     <ClCompile Include="DX12App.cpp" />
     <ClCompile Include="DXGIFactory.cpp" />
+    <ClCompile Include="IndexBuffer.cpp" />
     <ClCompile Include="main.cpp" />
     <ClCompile Include="ScreenQuadRenderer.cpp" />
     <ClCompile Include="TriangleApp.cpp" />
+    <ClCompile Include="VertexBuffer.cpp" />
   </ItemGroup>
   <ItemGroup>
     <FxCompile Include="DefferedTestVertex.hlsl">

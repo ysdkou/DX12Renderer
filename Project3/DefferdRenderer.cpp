@@ -6,13 +6,6 @@ void DefferdTest::createCbvHeap()
 	//0,Light
 	//1,2 MVP (frame count•ª)
 	//3 Material
-
-	D3D12_DESCRIPTOR_HEAP_DESC cbvHeapDesc{
-		D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV,
-		CB_HEAP_SIZE,
-		D3D12_DESCRIPTOR_HEAP_FLAG_SHADER_VISIBLE,
-		0
-	};
 	MyDX12::DescriptorHeap::Builder builder;
 	builder.setDevice(m_device.Get()).
 		setHeapType(D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV).
@@ -24,14 +17,15 @@ void DefferdTest::createCbvHeap()
 void DefferdTest::createLight()
 {
 	LightCb light = { {-1.0f,0.0f,0.0f},{1.0f,1.0f,1.0f} };
-	UINT bufferSize = alignedBufferSizeOf(sizeof(LightCb));
-	m_lightBuffer = CreateBuffer(bufferSize, &light);
 
-	D3D12_CONSTANT_BUFFER_VIEW_DESC cbDesc{};
-	cbDesc.BufferLocation = m_lightBuffer->GetGPUVirtualAddress();
-	cbDesc.SizeInBytes = bufferSize;
+	MyDX12::ConstantBuffer::Builder builder;
+	builder.seDevice(m_device.Get()).
+		setSizeAndValueFromInstance(light);
+	m_lightBuffer = MyDX12::ConstantBuffer::Create(builder);
 
-	m_cbvsrvHeap->createConstantBufferView(&cbDesc, LIGHT_BUFFER_START_INDEX);
+	auto desc = m_lightBuffer->createViewDesc();
+	m_cbvsrvHeap->createConstantBufferView(&desc, LIGHT_BUFFER_START_INDEX);
+
 	m_lightBufferView = m_cbvsrvHeap->getGPUHandle(LIGHT_BUFFER_START_INDEX);
 
 }
@@ -41,28 +35,31 @@ void DefferdTest::createModel()
 
 	ModelCb model{};
 	XMStoreFloat4x4(&model.model, XMMatrixRotationAxis(XMVectorSet(0.0f, 1.0f, 0.0f, 0.0f), XMConvertToRadians(45.0f)));
-	UINT bufferSize = alignedBufferSizeOf(sizeof(ModelCb));
-	m_modelBuffer = CreateBuffer(bufferSize, &model);
 
-	D3D12_CONSTANT_BUFFER_VIEW_DESC cbDesc{};
-	cbDesc.BufferLocation = m_modelBuffer->GetGPUVirtualAddress();
-	cbDesc.SizeInBytes = bufferSize;
+	MyDX12::ConstantBuffer::Builder builder;
+	builder.seDevice(m_device.Get()).
+		setSizeAndValueFromInstance(model);
+	m_modelBuffer = MyDX12::ConstantBuffer::Create(builder);
 
-	m_cbvsrvHeap->createConstantBufferView(&cbDesc, MODEL_BUFFER_START_INDEX);
+	auto desc = m_modelBuffer->createViewDesc();
+	m_cbvsrvHeap->createConstantBufferView(&desc, MODEL_BUFFER_START_INDEX);
+
 	m_modelBufferView = m_cbvsrvHeap->getGPUHandle(MODEL_BUFFER_START_INDEX);
 }
 void DefferdTest::createMaterial() 
 {
 
 	MaterialCb material = { {0.9f,0.0f,0.0f},1.0f,1.0f,1.0f };
-	UINT bufferSize = alignedBufferSizeOf(sizeof(MaterialCb));
-	m_materialBuffer = CreateBuffer(bufferSize, &material);
 
-	D3D12_CONSTANT_BUFFER_VIEW_DESC cbDesc{};
-	cbDesc.BufferLocation = m_materialBuffer->GetGPUVirtualAddress();
-	cbDesc.SizeInBytes = bufferSize;
+	MyDX12::ConstantBuffer::Builder builder;
+	builder.seDevice(m_device.Get()).
+		setSizeAndValueFromInstance(material);
+	m_materialBuffer = MyDX12::ConstantBuffer::Create(builder);
 
-	m_cbvsrvHeap->createConstantBufferView(&cbDesc, MATERIAL_BUFFER_START_INDEX);
+	auto desc = m_materialBuffer->createViewDesc();
+
+	m_cbvsrvHeap->createConstantBufferView(&desc, MATERIAL_BUFFER_START_INDEX);
+
 	m_materialBufferView = m_cbvsrvHeap->getGPUHandle(MATERIAL_BUFFER_START_INDEX);
 }
 void DefferdTest::createViewProjection()
@@ -86,17 +83,16 @@ void DefferdTest::createViewProjection()
 		XMStoreFloat4x4(&vp.view, XMMatrixTranspose(mtxView));
 		XMStoreFloat4x4(&vp.projection, XMMatrixTranspose(mtxProj));
 		;
+		MyDX12::ConstantBuffer::Builder builder;
+		builder.seDevice(m_device.Get()).
+			setSizeAndValueFromInstance(vp);
+		
+		m_viewProjectionBuffers.at(i) = MyDX12::ConstantBuffer::Create(builder);
+;
+		auto desc = m_viewProjectionBuffers.at(i)->createViewDesc();
+		m_cbvsrvHeap->createConstantBufferView(&desc, VIEW_PROJECTION_BUFFER_START_INDEX + i);
 
-		UINT bufferSize = alignedBufferSizeOf(sizeof(ViewProjectionCb));
-		m_viewProjectionBuffers[i] = CreateBuffer(bufferSize, &vp);
-
-		D3D12_CONSTANT_BUFFER_VIEW_DESC cbDesc{};
-		cbDesc.BufferLocation = m_viewProjectionBuffers[i]->GetGPUVirtualAddress();
-		cbDesc.SizeInBytes = bufferSize;
-
-		m_cbvsrvHeap->createConstantBufferView(&cbDesc, VIEW_PROJECTION_BUFFER_START_INDEX + i);
-
-		m_viewProjectionBufferViews[i] = m_cbvsrvHeap->getGPUHandle(VIEW_PROJECTION_BUFFER_START_INDEX + i);
+		m_viewProjectionBufferViews.at(i) = m_cbvsrvHeap->getGPUHandle(VIEW_PROJECTION_BUFFER_START_INDEX + i);
 	}
 
 }
@@ -173,11 +169,14 @@ void DefferdTest::createVertices()
 		{{ k,-k, k}}
 	};
 
-	m_vertexBuffer = CreateBuffer(sizeof(triangleVertices), triangleVertices);
+	MyDX12::VertexBuffer::Builder builder;
+	builder.setDevice(m_device.Get()).
+		setInitialValue(triangleVertices).
+		setSize(sizeof(triangleVertices)).
+		setStride(sizeof(Vertex));
 
-	m_vertexBufferView.BufferLocation = m_vertexBuffer->GetGPUVirtualAddress();
-	m_vertexBufferView.SizeInBytes = sizeof(triangleVertices);
-	m_vertexBufferView.StrideInBytes = sizeof(Vertex);
+	m_vertexBuffer = MyDX12::VertexBuffer::Create(builder);
+	
 }
 
 
@@ -193,13 +192,13 @@ void DefferdTest::createIndices()
 		20,21,22, 22,23,20,
 	};
 
-	m_indexBuffer = CreateBuffer(sizeof(indices), indices);
+	MyDX12::IndexBuffer::Builder builder;
+	builder.setDevice(m_device.Get()).
+		setSize(sizeof(indices)).
+		setSizePerIndex(sizeof(uint32_t)).
+		setInitialValue(indices);
+	m_indexBuffer = MyDX12::IndexBuffer::Create(builder);
 
-	m_indexBufferView.BufferLocation = m_indexBuffer->GetGPUVirtualAddress();
-	m_indexBufferView.SizeInBytes = sizeof(indices);
-	m_indexBufferView.Format = DXGI_FORMAT_R32_UINT;
-	
-	m_indexCount =  _countof(indices);
 }
 
 void DefferdTest::createRootSigunature()
@@ -334,8 +333,11 @@ void DefferdTest::MakeCommand(ComPtr<ID3D12GraphicsCommandList>& command)
 	command->SetDescriptorHeaps(_countof(heaps), heaps);
 
 	command->IASetPrimitiveTopology(D3D_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
-	command->IASetVertexBuffers(0,1,&m_vertexBufferView);
-	command->IASetIndexBuffer(&m_indexBufferView);
+	auto vertexBufferView = m_vertexBuffer->getBufferView();
+	command->IASetVertexBuffers(0,1,&vertexBufferView);
+
+	auto indexBufferView = m_indexBuffer->getBufferView();
+	command->IASetIndexBuffer(&indexBufferView);
 
 	command->SetGraphicsRootDescriptorTable(0, m_lightBufferView);
 	command->SetGraphicsRootDescriptorTable(1, m_viewProjectionBufferViews[m_frameIndex]);
@@ -343,6 +345,6 @@ void DefferdTest::MakeCommand(ComPtr<ID3D12GraphicsCommandList>& command)
 	command->SetGraphicsRootDescriptorTable(3,m_modelBufferView);
 
 
-	command->DrawIndexedInstanced(m_indexCount,1,0,0,0);
+	command->DrawIndexedInstanced(m_indexBuffer->getCount(),1,0,0,0);
 	
 }

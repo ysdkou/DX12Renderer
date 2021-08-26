@@ -3,6 +3,9 @@
 #include <DirectXMath.h>
 #include <memory>
 #include "DescriptorHeap.h"
+#include "ConstantBuffer.h"
+#include "IndexBuffer.h"
+#include "VertexBuffer.h"
 //TODO
 //model  viewprojのコンスタントバッファ分離
 //最終的に
@@ -48,14 +51,10 @@ private:
 		DirectX::XMFLOAT4X4 model;
 	};
 
-	ComPtr<ID3D12Resource1> m_vertexBuffer;
+	
 
-	ComPtr<ID3D12Resource1> m_indexBuffer;
-	UINT m_indexCount;
-
-	D3D12_VERTEX_BUFFER_VIEW  m_vertexBufferView;
-	D3D12_INDEX_BUFFER_VIEW   m_indexBufferView;
-
+	std::unique_ptr<MyDX12::IndexBuffer> m_indexBuffer;
+	std::unique_ptr<MyDX12::VertexBuffer> m_vertexBuffer;
 	ComPtr<ID3DBlob> m_vs, m_ps;
 	ComPtr<ID3D12RootSignature> m_rootSignature;
 	ComPtr<ID3D12PipelineState> m_basePipeline;
@@ -74,15 +73,13 @@ private:
 	static constexpr int MODEL_BUFFER_SIZE = 1;
 	static constexpr int CB_HEAP_SIZE = MODEL_BUFFER_START_INDEX + MODEL_BUFFER_SIZE;
 
-	//ComPtr<ID3D12DescriptorHeap> m_cbvHeap;
-	//UINT m_cbvDiscriptorSize;
 	std::unique_ptr<MyDX12::DescriptorHeap> m_cbvsrvHeap;
-	ComPtr<ID3D12Resource1> m_lightBuffer;
-	std::vector <ComPtr<ID3D12Resource1>> m_viewProjectionBuffers;
-	ComPtr<ID3D12Resource>   m_materialBuffer;
-	ComPtr<ID3D12Resource>   m_modelBuffer;
 
-	
+
+	std::unique_ptr<MyDX12::ConstantBuffer> m_lightBuffer;
+	std::vector<std::unique_ptr<MyDX12::ConstantBuffer>> m_viewProjectionBuffers;
+	std::unique_ptr<MyDX12::ConstantBuffer> m_materialBuffer;
+	std::unique_ptr<MyDX12::ConstantBuffer> m_modelBuffer;
 
 	ComPtr<ID3D12Resource1> CreateBuffer(UINT buffersize, const void* initialValue);
 	UINT alignedBufferSizeOf(UINT size);

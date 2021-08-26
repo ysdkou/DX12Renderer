@@ -4,38 +4,38 @@ namespace MyDX12
 {
 	DescriptorHeapBuilder& DescriptorHeapBuilder::setHeapType(D3D12_DESCRIPTOR_HEAP_TYPE type)
 	{
-		m_setupFlags.set(TYPE);
+		m_checkFlag.set(TYPE);
 		m_type = type;
 		return *this;
 	
 	}
 	DescriptorHeapBuilder& DescriptorHeapBuilder::setSize(UINT size)
 	{
-		m_setupFlags.set(NUM);
+		m_checkFlag.set(NUM);
 		m_numDescriptors = size;
 		return *this;
 	}
 	DescriptorHeapBuilder& DescriptorHeapBuilder::setFlags(D3D12_DESCRIPTOR_HEAP_FLAGS flag)
 	{
-		m_setupFlags.set(FLAGS);
+		m_checkFlag.set(FLAGS);
 		m_flags = flag;
 		return *this;
 	}
 	DescriptorHeapBuilder& DescriptorHeapBuilder::setFlagsShaderVisible()
 	{
-		m_setupFlags.set(FLAGS);
+		m_checkFlag.set(FLAGS);
 		m_flags = D3D12_DESCRIPTOR_HEAP_FLAG_SHADER_VISIBLE;
 		return *this;
 	}
 	DescriptorHeapBuilder& DescriptorHeapBuilder::setFlagsNone()
 	{
-		m_setupFlags.set(FLAGS);
+		m_checkFlag.set(FLAGS);
 		m_flags = D3D12_DESCRIPTOR_HEAP_FLAG_NONE;
 		return *this;
 	}
 	DescriptorHeapBuilder& DescriptorHeapBuilder::setDevice(ID3D12Device* device)
 	{
-		m_setupFlags.set(DEVICE);
+		m_checkFlag.set(DEVICE);
 		m_device = device;
 		return *this;
 	}
@@ -58,7 +58,7 @@ namespace MyDX12
 	}
 	std::unique_ptr<DescriptorHeap> DescriptorHeap::Create(const DescriptorHeapBuilder& builder)
 	{
-		assert(builder.m_setupFlags.all() && "DescriptorHeapBulder‚Ìƒƒ“ƒo‚ªˆê•”İ’è‚³‚ê‚Ä‚¢‚Ü‚¹‚ñ");
+		assert(builder.m_checkFlag.all() && "DescriptorHeapBulder‚Ìƒƒ“ƒo‚ªˆê•”İ’è‚³‚ê‚Ä‚¢‚Ü‚¹‚ñ");
 
 		return std::unique_ptr<DescriptorHeap>( new DescriptorHeap(builder));
 	}

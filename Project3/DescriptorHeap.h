@@ -15,7 +15,7 @@ namespace MyDX12 {
 			FLAGS,
 			DEVICE,
 		};
-		std::bitset<4> m_setupFlags;
+		std::bitset<4> m_checkFlag;
 		D3D12_DESCRIPTOR_HEAP_TYPE m_type;
 		UINT m_numDescriptors;
 		D3D12_DESCRIPTOR_HEAP_FLAGS m_flags;
