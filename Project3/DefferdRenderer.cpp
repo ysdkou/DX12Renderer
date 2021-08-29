@@ -9,7 +9,7 @@ void DefferdTest::createCbvHeap()
 	MyDX12::DescriptorHeap::Builder builder;
 	builder.setDevice(m_device.Get()).
 		setHeapType(D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV).
-		setSize(CB_HEAP_SIZE).
+		setSize(CB_SRV_HEAP_SIZE).
 		setFlagsShaderVisible();
 
 	m_cbvsrvHeap = MyDX12::DescriptorHeap::Create(builder);
@@ -97,40 +97,6 @@ void DefferdTest::createViewProjection()
 
 }
 
-DefferdTest::ComPtr<ID3D12Resource1> DefferdTest::CreateBuffer(UINT buffersize, const void* initialValue)
-{
-	HRESULT hr;
-	ComPtr<ID3D12Resource1> buffer;
-	const auto heapProps = CD3DX12_HEAP_PROPERTIES(D3D12_HEAP_TYPE_UPLOAD);
-	const auto resDesc = CD3DX12_RESOURCE_DESC::Buffer(buffersize);
-	hr = m_device->CreateCommittedResource(
-		&heapProps,
-		D3D12_HEAP_FLAG_NONE,
-		&resDesc,
-		D3D12_RESOURCE_STATE_GENERIC_READ,
-		nullptr,
-		IID_PPV_ARGS(&buffer)
-	);
-
-	if (SUCCEEDED(hr) && initialValue != nullptr)
-	{
-		void* mapped;
-		CD3DX12_RANGE range(0, 0);
-		hr = buffer->Map(0, &range, &mapped);
-		if (SUCCEEDED(hr))
-		{
-			memcpy(mapped, initialValue, buffersize);
-			buffer->Unmap(0, nullptr);
-		}
-	}
-
-	return buffer;
-}
-
-UINT DefferdTest::alignedBufferSizeOf(UINT size)
-{
-	return size + 255 &~255;
-}
 
 void DefferdTest::createVertices()
 {
@@ -243,13 +209,13 @@ void DefferdTest::compileShader()
 	// シェーダーをコンパイル.
 	HRESULT hr;
 	ComPtr<ID3DBlob> errBlob;
-	hr = CompileShaderFromFile(L"DefferedTestVertex.hlsl", L"vs_6_0", m_vs, errBlob);
+	hr = CompileShaderFromFile(L"GBufferPassVertex.hlsl", L"vs_6_0", m_vs, errBlob);
 	if (FAILED(hr))
 	{
 		OutputDebugStringA((const char*)errBlob->GetBufferPointer());
 		throw std::runtime_error("Shader Comple Failed");
 	}
-	hr = CompileShaderFromFile(L"DefferedTestPixel.hlsl", L"ps_6_0", m_ps, errBlob);
+	hr = CompileShaderFromFile(L"GBufferPassPixel.hlsl", L"ps_6_0", m_ps, errBlob);
 	if (FAILED(hr))
 	{
 		OutputDebugStringA((const char*)errBlob->GetBufferPointer());
@@ -302,28 +268,179 @@ void DefferdTest::createPipeLine()
 	}
 }
 
+void DefferdTest::createGBuferRTV()
+{
+	//1.Albedo,roughness
+	//2 Normal,metallic
+	//3 ao
+
+	MyDX12::DescriptorHeap::Builder builder;
+	//DescriptorHeap生成
+	builder.setDevice(m_device.Get()).
+		setHeapType(D3D12_DESCRIPTOR_HEAP_TYPE_RTV).
+		setSize(3).
+		setFlagsNone();
+
+	m_gBufferRtvHeap = MyDX12::DescriptorHeap::Create(builder);
+
+	//GBufferTextureのResource生成
+	CD3DX12_HEAP_PROPERTIES heapProperty(D3D12_HEAP_TYPE_DEFAULT);
+	D3D12_RESOURCE_DESC resouceDesc{};
+
+	resouceDesc.Dimension = D3D12_RESOURCE_DIMENSION_TEXTURE2D;
+	resouceDesc.Alignment = 0;
+	resouceDesc.SampleDesc.Count = 1;
+	resouceDesc.SampleDesc.Quality = 0;
+	resouceDesc.MipLevels = 1;
+
+	resouceDesc.DepthOrArraySize = 1;
+	resouceDesc.Width = static_cast<UINT>(m_viewport.Width);
+	resouceDesc.Height = static_cast<UINT>(m_viewport.Height);
+	resouceDesc.Layout = D3D12_TEXTURE_LAYOUT_UNKNOWN;
+	resouceDesc.Flags = D3D12_RESOURCE_FLAG_ALLOW_RENDER_TARGET;
+
+	D3D12_CLEAR_VALUE clearVal;
+
+	clearVal.Color[0] = m_clearColor[0];
+	clearVal.Color[1] = m_clearColor[1];
+	clearVal.Color[2] = m_clearColor[2];
+	clearVal.Color[3] = m_clearColor[3];
+
+	for (int i = 0; i < GBUFFER_SIZE; i++)
+	{
+		resouceDesc.Format = m_gBuffferFormat.at(i);
+		clearVal.Format = m_gBuffferFormat.at(i);
+		m_device->CreateCommittedResource(&heapProperty, D3D12_HEAP_FLAG_NONE, &resouceDesc, D3D12_RESOURCE_STATE_RENDER_TARGET, &clearVal, IID_PPV_ARGS(&m_gBufferTexture.at(i)));
+	}
+
+	//RenderTargetView生成
+	D3D12_RENDER_TARGET_VIEW_DESC rtvDesc{};
+
+	rtvDesc.Texture2D.MipSlice = 0;
+	rtvDesc.Texture2D.PlaneSlice = 0;
+
+	rtvDesc.ViewDimension = D3D12_RTV_DIMENSION_TEXTURE2D;
+
+	for (UINT i = 0; i < GBUFFER_SIZE; i++)
+	{
+		rtvDesc.Format = m_gBuffferFormat.at(i);
+		m_gBufferRtvHeap->createRenderTargetView(m_gBufferTexture.at(i).Get(), &rtvDesc, i);
+	}
+
+	//ShaderResouceView生成
+
+	D3D12_SHADER_RESOURCE_VIEW_DESC descSRV{};
+
+	descSRV.Texture2D.MipLevels = resouceDesc.MipLevels;
+	descSRV.Texture1D.MostDetailedMip = 0;
+	descSRV.ViewDimension = D3D12_SRV_DIMENSION_TEXTURE2D;
+	descSRV.Shader4ComponentMapping = D3D12_DEFAULT_SHADER_4_COMPONENT_MAPPING;
+	
+	for (int i = 0; i < GBUFFER_SIZE; i++)
+	{
+		descSRV.Format = m_gBuffferFormat.at(i);
+		m_cbvsrvHeap->createShaderResouceView(m_gBufferTexture.at(i).Get(), &descSRV, GBUFFER_SRV_START_INDEX + i);
+	}
+
+}
+
+void DefferdTest::createDepthSRV()
+{
+	D3D12_SHADER_RESOURCE_VIEW_DESC descSRV{};
+
+	descSRV.Texture2D.MipLevels = 1;
+	descSRV.Texture2D.MostDetailedMip = 0;
+	descSRV.Format = DXGI_FORMAT_R24_UNORM_X8_TYPELESS;
+	descSRV.ViewDimension = D3D12_SRV_DIMENSION_TEXTURE2D;
+	descSRV.Shader4ComponentMapping = D3D12_DEFAULT_SHADER_4_COMPONENT_MAPPING;
+
+	
+	m_cbvsrvHeap->createShaderResouceView(m_depthStencil.Get(), &descSRV, DEPTH_BUFFER_SRV_START_INDEX);
+}
+
+void DefferdTest::createGBufferPipeLine()
+{
+	// インプットレイアウト
+	D3D12_INPUT_ELEMENT_DESC inputElementDesc[] = {
+	  { "POSITION", 0, DXGI_FORMAT_R32G32B32_FLOAT, 0, offsetof(Vertex, position), D3D12_INPUT_CLASSIFICATION_PER_VERTEX_DATA},
+	};
+
+
+	D3D12_GRAPHICS_PIPELINE_STATE_DESC psoDesc{};
+
+	psoDesc.VS = CD3DX12_SHADER_BYTECODE(m_vs.Get());
+	psoDesc.PS = CD3DX12_SHADER_BYTECODE(m_ps.Get());
+
+	psoDesc.BlendState = CD3DX12_BLEND_DESC(D3D12_DEFAULT);
+
+	auto rasterizerDesc = CD3DX12_RASTERIZER_DESC(D3D12_DEFAULT);
+	rasterizerDesc.CullMode = D3D12_CULL_MODE_NONE;
+	psoDesc.RasterizerState = rasterizerDesc;
+
+
+	psoDesc.NumRenderTargets = GBUFFER_SIZE;
+	psoDesc.RTVFormats[0] = m_gBuffferFormat[0];
+	psoDesc.RTVFormats[1] = m_gBuffferFormat[1];
+	psoDesc.RTVFormats[2] = m_gBuffferFormat[2];
+
+
+	// デプスバッファのフォーマットを設定
+	psoDesc.DSVFormat = DXGI_FORMAT_D32_FLOAT;
+	auto depthStencilDesc = CD3DX12_DEPTH_STENCIL_DESC(D3D12_DEFAULT);
+	psoDesc.DepthStencilState = depthStencilDesc;
+
+	psoDesc.InputLayout = { inputElementDesc, _countof(inputElementDesc) };
+
+	// ルートシグネチャのセット
+	psoDesc.pRootSignature = m_rootSignature.Get();
+	psoDesc.PrimitiveTopologyType = D3D12_PRIMITIVE_TOPOLOGY_TYPE_TRIANGLE;
+	// マルチサンプル設定
+	psoDesc.SampleDesc = { 1,0 };
+	psoDesc.SampleMask = UINT_MAX; // これを忘れると絵が出ない＆警告も出ないので注意.
+
+	auto hr = m_device->CreateGraphicsPipelineState(&psoDesc, IID_PPV_ARGS(&m_gBufferPipeline));
+
+
+}
+
 void DefferdTest::prepare()
 {
 	createVertices();
 	createIndices();
 	compileShader();
 	createRootSigunature();
-	createPipeLine();
+	//createPipeLine();
+	createGBufferPipeLine();
 	createCbvHeap();
 	createLight();
 	createViewProjection();
 	createMaterial();
 	createModel();
+	createGBuferRTV();
+	createDepthSRV();
 }
 
 void DefferdTest::cleanup()
 {
-	m_basePipeline->Release();
+	for (int i = 0; i < GBUFFER_SIZE; i++)
+	{
+
+		
+	}
 }
 
 void DefferdTest::MakeCommand(ComPtr<ID3D12GraphicsCommandList>& command)
 {
-	command->SetPipelineState(m_basePipeline.Get());
+	auto rtvHeapStart = m_gBufferRtvHeap->getCPUHandle(0);
+	auto dsvHeapStart = m_heapDsv->GetCPUDescriptorHandleForHeapStart();
+	
+	for (int i = 0; i < GBUFFER_SIZE; i++)
+	{
+		command->ClearRenderTargetView(m_gBufferRtvHeap->getCPUHandle(i), m_clearColor.data(), 0, nullptr);
+	}
+	command->OMSetRenderTargets(GBUFFER_SIZE, &rtvHeapStart, true, &dsvHeapStart);
+
+	command->SetPipelineState(m_gBufferPipeline.Get());
 	command->SetGraphicsRootSignature(m_rootSignature.Get());
 
 	command->RSSetViewports(1, &m_viewport);

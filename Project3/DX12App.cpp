@@ -157,7 +157,7 @@ void DX12App::createDepthStencilView()
 
 
 	auto resDesc = CD3DX12_RESOURCE_DESC::Tex2D(
-		DXGI_FORMAT_D32_FLOAT,
+		DXGI_FORMAT_D24_UNORM_S8_UINT,
 		m_width, m_height,
 		1, 0,
 		1, 0,
@@ -183,7 +183,7 @@ void DX12App::createDepthStencilView()
 
 	D3D12_DEPTH_STENCIL_VIEW_DESC dsvDesc
 	{
-		DXGI_FORMAT_D32_FLOAT,
+		DXGI_FORMAT_D24_UNORM_S8_UINT,
 		D3D12_DSV_DIMENSION_TEXTURE2D,
 		D3D12_DSV_FLAG_NONE,
 		{  //D3D12_TEX2D_DSV
@@ -337,6 +337,8 @@ void DX12App::intialize(HWND hWnd)
 
 void DX12App::terminate()
 {
+	waitPreviousFrame();
+	cleanup();
 }
 
 void DX12App::render()

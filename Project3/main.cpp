@@ -1,7 +1,7 @@
 //ウィンドウプロシージャ
 #include "DefferdRenderer.h"
 #include <Windows.h>
-
+#include <thread>
 LRESULT CALLBACK WindowProcedure(HWND hwnd, UINT msg, WPARAM wparam, LPARAM lparam)
 {
 	PAINTSTRUCT ps;
@@ -68,7 +68,8 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE, LPSTR, int nCmdShow)
 		}
 		theApp.render();
 	}
+
 	theApp.terminate();
 
-	return msg.wParam;
+	return static_cast<int>(msg.wParam);
 }

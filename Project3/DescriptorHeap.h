@@ -49,6 +49,11 @@ namespace MyDX12 {
 		const ID3D12DescriptorHeap* getRaw()const;
 		ID3D12DescriptorHeap* getRaw();
 		void createConstantBufferView(const D3D12_CONSTANT_BUFFER_VIEW_DESC* desc, UINT index);
+		void createRenderTargetView(ID3D12Resource* renderTargetResource,const D3D12_RENDER_TARGET_VIEW_DESC* desc, UINT index);
+		void createShaderResouceView(ID3D12Resource* shaderResource, const D3D12_SHADER_RESOURCE_VIEW_DESC* desc, UINT index);
+
 		CD3DX12_GPU_DESCRIPTOR_HANDLE getGPUHandle(UINT index);
+		CD3DX12_CPU_DESCRIPTOR_HANDLE getCPUHandle(UINT index);
+
 	};
 }

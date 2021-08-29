@@ -91,6 +91,12 @@
     <FxCompile Include="DefferedTestPixel.hlsl">
       <Filter>ヘッダー ファイル</Filter>
     </FxCompile>
+    <FxCompile Include="GBufferPassVertex.hlsl">
+      <Filter>ヘッダー ファイル</Filter>
+    </FxCompile>
+    <FxCompile Include="GBufferPassPixel.hlsl">
+      <Filter>ヘッダー ファイル</Filter>
+    </FxCompile>
   </ItemGroup>
   <ItemGroup>
     <None Include="BRDF.hlsli">

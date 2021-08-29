@@ -75,9 +75,23 @@ namespace MyDX12
 		CD3DX12_CPU_DESCRIPTOR_HANDLE cpuHandle(m_heap->GetCPUDescriptorHandleForHeapStart(), index, m_descriptorSize);
 		m_device->CreateConstantBufferView(desc, cpuHandle);
 	}
+	void DescriptorHeap::createRenderTargetView(ID3D12Resource* renderTargetResource, const D3D12_RENDER_TARGET_VIEW_DESC* desc, UINT index)
+	{
+		CD3DX12_CPU_DESCRIPTOR_HANDLE cpuHandle(m_heap->GetCPUDescriptorHandleForHeapStart(), index, m_descriptorSize);
+		m_device->CreateRenderTargetView(renderTargetResource, desc, cpuHandle);
+	}
+	void DescriptorHeap::createShaderResouceView(ID3D12Resource* shaderResource, const D3D12_SHADER_RESOURCE_VIEW_DESC* desc, UINT index)
+	{
+		CD3DX12_CPU_DESCRIPTOR_HANDLE cpuHandle(m_heap->GetCPUDescriptorHandleForHeapStart(), index, m_descriptorSize);
+		m_device->CreateShaderResourceView(shaderResource, desc, cpuHandle);
+	}
 	CD3DX12_GPU_DESCRIPTOR_HANDLE DescriptorHeap::getGPUHandle(UINT index)
 	{
 		return CD3DX12_GPU_DESCRIPTOR_HANDLE(m_heap->GetGPUDescriptorHandleForHeapStart(), index, m_descriptorSize);
+	}
+	CD3DX12_CPU_DESCRIPTOR_HANDLE DescriptorHeap::getCPUHandle(UINT index)
+	{
+		return CD3DX12_CPU_DESCRIPTOR_HANDLE(m_heap->GetCPUDescriptorHandleForHeapStart(), index, m_descriptorSize);
 	}
 }
 
