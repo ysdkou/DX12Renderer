@@ -21,7 +21,7 @@ namespace MyDX12
 		};
 		std::bitset<3> m_checkFlag;
 	public:
-		IndexBufferBuilder& setSize(UINT size);
+		IndexBufferBuilder& setSizeInBytes(UINT size);
 		IndexBufferBuilder& setSizePerIndex(UINT size);
 		IndexBufferBuilder& setDevice(ID3D12Device* device);
 		IndexBufferBuilder& setInitialValue(const void* value);

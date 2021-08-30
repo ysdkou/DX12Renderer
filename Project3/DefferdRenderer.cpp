@@ -1,5 +1,4 @@
 #include "DefferdRenderer.h"
-
 void DefferdTest::createCbvHeap()
 {
 	//CBV
@@ -98,7 +97,7 @@ void DefferdTest::createViewProjection()
 }
 
 
-void DefferdTest::createVertices()
+void DefferdTest::createBoxVertices()
 {
 	const float k = 1.0f;
 
@@ -138,7 +137,7 @@ void DefferdTest::createVertices()
 	MyDX12::VertexBuffer::Builder builder;
 	builder.setDevice(m_device.Get()).
 		setInitialValue(triangleVertices).
-		setSize(sizeof(triangleVertices)).
+		setSizeInBytes(sizeof(triangleVertices)).
 		setStride(sizeof(Vertex));
 
 	m_vertexBuffer = MyDX12::VertexBuffer::Create(builder);
@@ -147,7 +146,7 @@ void DefferdTest::createVertices()
 
 
 
-void DefferdTest::createIndices()
+void DefferdTest::createBoxIndices()
 {
 	uint32_t indices[] = {
 		0, 1, 2, 2, 3,0,
@@ -160,32 +159,171 @@ void DefferdTest::createIndices()
 
 	MyDX12::IndexBuffer::Builder builder;
 	builder.setDevice(m_device.Get()).
-		setSize(sizeof(indices)).
+		setSizeInBytes(sizeof(indices)).
 		setSizePerIndex(sizeof(uint32_t)).
 		setInitialValue(indices);
 	m_indexBuffer = MyDX12::IndexBuffer::Create(builder);
 
 }
 
+void DefferdTest::createSphereVertices()
+{
+	using namespace DirectX;
+	auto radius = 1.0f;
+	size_t segment = 50;
+	size_t slice = 50;
+
+	std::vector<Vertex> verts;
+	verts.resize((segment + 1) * slice + 2);
+
+	verts[0].position = XMFLOAT3(0,radius, 0);
+	for (size_t lat = 0; lat < slice; lat++)
+	{
+		float a1 = XM_PI* (float)(lat + 1) / (slice+ 1);
+		float sin1 = sinf(a1);
+		float cos1 = cosf(a1);
+
+		for (int lon = 0; lon <= segment; lon++)
+		{
+			float a2 = XM_2PI* (float)(lon == segment? 0 : lon) / segment;
+			float sin2 = sinf(a2);
+			float cos2 = cosf(a2);
+
+			verts[lon + lat * (segment + 1) + 1].position = XMFLOAT3(sin1 * cos2 *radius, cos1 *radius, sin1 * sin2 *radius);
+		}
+	}
+	verts[verts.size() - 1].position = XMFLOAT3(0, radius, 0);
+
+	for (int n = 0; n < verts.size(); n++)
+	{
+		XMStoreFloat3(&verts[n].normal, XMVector3Normalize(XMVectorSet(verts[n].position.x, verts[n].position.y, verts[n].position.z, 0)));
+	}
+	
+	MyDX12::VertexBuffer::Builder builder;
+	builder.setDevice(m_device.Get()).
+		setInitialValue(verts.data()).
+		setSizeInBytes(verts.size()*sizeof(Vertex)).
+		setStride(sizeof(Vertex));
+
+	m_vertexBuffer = MyDX12::VertexBuffer::Create(builder);
+
+	m_vertSize = verts.size();
+}
+
+void DefferdTest::createSphereIndices()
+{
+	auto radius = 1.0f;
+	size_t segment = 50;
+	size_t slice = 50;
+
+	int nbFaces = m_vertSize;
+	int nbTriangles = nbFaces * 2;
+	int nbIndexes = nbTriangles * 3;
+	std::vector< uint32_t>  triangles(nbIndexes);
+	//int* triangles = new int[nbIndexes];
+
+
+	int i = 0;
+	for (int lon = 0; lon < segment; lon++)
+	{
+		triangles[i++] = lon + 2;
+		triangles[i++] = lon + 1;
+		triangles[i++] = 0;
+	}
+
+	//Middle
+	for (int lat = 0; lat < slice - 1; lat++)
+	{
+		for (int lon = 0; lon < segment; lon++)
+		{
+			int current = lon + lat * (segment + 1) + 1;
+			int next = current + segment + 1;
+
+			triangles[i++] = current;
+			triangles[i++] = current + 1;
+			triangles[i++] = next + 1;
+
+			triangles[i++] = current;
+			triangles[i++] = next + 1;
+			triangles[i++] = next;
+		}
+	}
+
+	//Bottom Cap
+	for (int lon = 0; lon < segment; lon++)
+	{
+		triangles[i++] = m_vertSize - 1;
+		triangles[i++] = m_vertSize - (lon + 2) - 1;
+		triangles[i++] = m_vertSize - (lon + 1) - 1;
+	}
+
+	MyDX12::IndexBuffer::Builder builder;
+	builder.setDevice(m_device.Get()).
+		setSizeInBytes(triangles.size()* sizeof(uint32_t)).
+		setSizePerIndex(sizeof(uint32_t)).
+		setInitialValue(triangles.data());
+	m_indexBuffer = MyDX12::IndexBuffer::Create(builder);
+
+
+}
+
+void DefferdTest::createScreenQuad()
+{
+	using namespace DirectX;
+	struct QuadVertex
+	{
+		XMFLOAT4 position;
+		XMFLOAT2 texcoord;
+	};
+
+	QuadVertex quadVerts[] =
+	{
+		{ { -1.0f,1.0f, 0.0f,1.0f },{ 0.0f,0.0f } },
+		{ { 1.0f, 1.0f, 0.0f,1.0f }, {1.0f,0.0f } },
+		{ { -1.0f, -1.0f, 0.0f,1.0f },{ 0.0f,1.0f } },
+		{ { 1.0f, -1.0f, 0.0f,1.0f },{ 1.0f,1.0f } }
+	};
+
+	MyDX12::VertexBuffer::Builder builder;
+	builder.setDevice(m_device.Get()).
+		setInitialValue(quadVerts).
+		setSizeInBytes(sizeof(quadVerts)).
+		setStride(sizeof(QuadVertex));
+
+	m_screenQuadVertex = MyDX12::VertexBuffer::Create(builder);
+
+
+}
+
 void DefferdTest::createRootSigunature()
 {
-	CD3DX12_DESCRIPTOR_RANGE light, mvp, material,model;
+	CD3DX12_DESCRIPTOR_RANGE light, mvp, material, model, gBuffer;
 	light.Init(D3D12_DESCRIPTOR_RANGE_TYPE_CBV, 1, 0);
 	mvp.Init(D3D12_DESCRIPTOR_RANGE_TYPE_CBV, 1, 1);
     material.Init(D3D12_DESCRIPTOR_RANGE_TYPE_CBV, 1, 2);
 	model.Init(D3D12_DESCRIPTOR_RANGE_TYPE_CBV, 1, 3);
+	gBuffer.Init(D3D12_DESCRIPTOR_RANGE_TYPE_SRV, 4,0);
 
-	CD3DX12_ROOT_PARAMETER rootParams[4]{};
+
+
+	CD3DX12_ROOT_PARAMETER rootParams[5]{};
 
 	rootParams[0].InitAsDescriptorTable(1, &light);
 	rootParams[1].InitAsDescriptorTable(1, &mvp);
 	rootParams[2].InitAsDescriptorTable(1, &material);
 	rootParams[3].InitAsDescriptorTable(1, &model);
-
+	rootParams[4].InitAsDescriptorTable(1, &gBuffer);
 
 	CD3DX12_ROOT_SIGNATURE_DESC desc;
 
 	desc.Init(_countof(rootParams), rootParams, 0, nullptr, D3D12_ROOT_SIGNATURE_FLAG_ALLOW_INPUT_ASSEMBLER_INPUT_LAYOUT);
+
+	CD3DX12_STATIC_SAMPLER_DESC staticSamplers[1]{};
+	staticSamplers[0].Init(0, D3D12_FILTER_MIN_MAG_MIP_LINEAR);
+
+	desc.NumStaticSamplers = 1;
+	desc.pStaticSamplers = staticSamplers;
+
 	ComPtr<ID3DBlob> signature;
 	ComPtr<ID3DBlob> errBlob;
 	auto hr = D3D12SerializeRootSignature(&desc, D3D_ROOT_SIGNATURE_VERSION_1_0, &signature, &errBlob);
@@ -209,13 +347,26 @@ void DefferdTest::compileShader()
 	// シェーダーをコンパイル.
 	HRESULT hr;
 	ComPtr<ID3DBlob> errBlob;
-	hr = CompileShaderFromFile(L"GBufferPassVertex.hlsl", L"vs_6_0", m_vs, errBlob);
+	hr = CompileShaderFromFile(L"GBufferPassVertex.hlsl", L"vs_6_0", m_gBufferVS, errBlob);
 	if (FAILED(hr))
 	{
 		OutputDebugStringA((const char*)errBlob->GetBufferPointer());
 		throw std::runtime_error("Shader Comple Failed");
 	}
-	hr = CompileShaderFromFile(L"GBufferPassPixel.hlsl", L"ps_6_0", m_ps, errBlob);
+	hr = CompileShaderFromFile(L"GBufferPassPixel.hlsl", L"ps_6_0", m_gBufferPS, errBlob);
+	if (FAILED(hr))
+	{
+		OutputDebugStringA((const char*)errBlob->GetBufferPointer());
+		throw std::runtime_error("Shader Comple Failed");
+	}
+
+	hr = CompileShaderFromFile(L"LightPassVertex.hlsl", L"vs_6_0", m_lightPassVS ,errBlob);
+	if (FAILED(hr))
+	{
+		OutputDebugStringA((const char*)errBlob->GetBufferPointer());
+		throw std::runtime_error("Shader Comple Failed");
+	}
+	hr = CompileShaderFromFile(L"LightPassPixel.hlsl", L"ps_6_0", m_lightPassPS, errBlob);
 	if (FAILED(hr))
 	{
 		OutputDebugStringA((const char*)errBlob->GetBufferPointer());
@@ -233,8 +384,8 @@ void DefferdTest::createPipeLine()
 
 	D3D12_GRAPHICS_PIPELINE_STATE_DESC psoDesc{};
 
-	psoDesc.VS = CD3DX12_SHADER_BYTECODE(m_vs.Get());
-	psoDesc.PS = CD3DX12_SHADER_BYTECODE(m_ps.Get());
+	psoDesc.VS = CD3DX12_SHADER_BYTECODE(m_gBufferVS.Get());
+	psoDesc.PS = CD3DX12_SHADER_BYTECODE(m_gBufferPS.Get());
 
 	psoDesc.BlendState = CD3DX12_BLEND_DESC(D3D12_DEFAULT);
 
@@ -363,19 +514,18 @@ void DefferdTest::createGBufferPipeLine()
 	// インプットレイアウト
 	D3D12_INPUT_ELEMENT_DESC inputElementDesc[] = {
 	  { "POSITION", 0, DXGI_FORMAT_R32G32B32_FLOAT, 0, offsetof(Vertex, position), D3D12_INPUT_CLASSIFICATION_PER_VERTEX_DATA},
+	  { "NORMAL", 0, DXGI_FORMAT_R32G32B32_FLOAT, 0, offsetof(Vertex, normal), D3D12_INPUT_CLASSIFICATION_PER_VERTEX_DATA},
 	};
 
 
 	D3D12_GRAPHICS_PIPELINE_STATE_DESC psoDesc{};
 
-	psoDesc.VS = CD3DX12_SHADER_BYTECODE(m_vs.Get());
-	psoDesc.PS = CD3DX12_SHADER_BYTECODE(m_ps.Get());
+	psoDesc.VS = CD3DX12_SHADER_BYTECODE(m_gBufferVS.Get());
+	psoDesc.PS = CD3DX12_SHADER_BYTECODE(m_gBufferPS.Get());
 
 	psoDesc.BlendState = CD3DX12_BLEND_DESC(D3D12_DEFAULT);
 
-	auto rasterizerDesc = CD3DX12_RASTERIZER_DESC(D3D12_DEFAULT);
-	rasterizerDesc.CullMode = D3D12_CULL_MODE_NONE;
-	psoDesc.RasterizerState = rasterizerDesc;
+	psoDesc.RasterizerState = CD3DX12_RASTERIZER_DESC(D3D12_DEFAULT);
 
 
 	psoDesc.NumRenderTargets = GBUFFER_SIZE;
@@ -385,9 +535,8 @@ void DefferdTest::createGBufferPipeLine()
 
 
 	// デプスバッファのフォーマットを設定
-	psoDesc.DSVFormat = DXGI_FORMAT_D32_FLOAT;
-	auto depthStencilDesc = CD3DX12_DEPTH_STENCIL_DESC(D3D12_DEFAULT);
-	psoDesc.DepthStencilState = depthStencilDesc;
+	psoDesc.DSVFormat = DXGI_FORMAT_D24_UNORM_S8_UINT;
+	psoDesc.DepthStencilState = CD3DX12_DEPTH_STENCIL_DESC(D3D12_DEFAULT);
 
 	psoDesc.InputLayout = { inputElementDesc, _countof(inputElementDesc) };
 
@@ -403,37 +552,44 @@ void DefferdTest::createGBufferPipeLine()
 
 }
 
-void DefferdTest::prepare()
+void DefferdTest::createLightPassPipeLine()
 {
-	createVertices();
-	createIndices();
-	compileShader();
-	createRootSigunature();
-	//createPipeLine();
-	createGBufferPipeLine();
-	createCbvHeap();
-	createLight();
-	createViewProjection();
-	createMaterial();
-	createModel();
-	createGBuferRTV();
-	createDepthSRV();
+	D3D12_INPUT_ELEMENT_DESC inputElementDesc[] = {
+		{ "POSITION", 0, DXGI_FORMAT_R32G32B32A32_FLOAT, 0, 0, D3D12_INPUT_CLASSIFICATION_PER_VERTEX_DATA, 0 },
+		{ "TEXCOORD", 0, DXGI_FORMAT_R32G32_FLOAT, 0, 16, D3D12_INPUT_CLASSIFICATION_PER_VERTEX_DATA, 0 }	
+	};
+	D3D12_GRAPHICS_PIPELINE_STATE_DESC psoDesc{};
+
+	psoDesc.VS = CD3DX12_SHADER_BYTECODE(m_lightPassVS.Get());
+	psoDesc.PS = CD3DX12_SHADER_BYTECODE(m_lightPassPS.Get());
+
+	psoDesc.BlendState = CD3DX12_BLEND_DESC(D3D12_DEFAULT);
+	psoDesc.RasterizerState = CD3DX12_RASTERIZER_DESC(D3D12_DEFAULT);
+	psoDesc.RasterizerState.DepthClipEnable = FALSE;
+
+	psoDesc.NumRenderTargets = 1;
+	psoDesc.RTVFormats[0] = DXGI_FORMAT_R8G8B8A8_UNORM;
+
+	psoDesc.DepthStencilState = CD3DX12_DEPTH_STENCIL_DESC(D3D12_DEFAULT);
+	psoDesc.DepthStencilState.DepthEnable = FALSE;
+
+	psoDesc.InputLayout = { inputElementDesc, _countof(inputElementDesc) };
+  
+	psoDesc.pRootSignature = m_rootSignature.Get();
+	psoDesc.PrimitiveTopologyType = D3D12_PRIMITIVE_TOPOLOGY_TYPE_TRIANGLE;
+
+	psoDesc.SampleDesc = { 1,0 };
+	psoDesc.SampleMask = UINT_MAX; // これを忘れると絵が出ない＆警告も出ないので注意.
+
+	auto hr = m_device->CreateGraphicsPipelineState(&psoDesc, IID_PPV_ARGS(&m_lightPassPipeline));
+
 }
 
-void DefferdTest::cleanup()
-{
-	for (int i = 0; i < GBUFFER_SIZE; i++)
-	{
-
-		
-	}
-}
-
-void DefferdTest::MakeCommand(ComPtr<ID3D12GraphicsCommandList>& command)
+void DefferdTest::makeCommandGBufferPass(ComPtr<ID3D12GraphicsCommandList>& command)
 {
 	auto rtvHeapStart = m_gBufferRtvHeap->getCPUHandle(0);
 	auto dsvHeapStart = m_heapDsv->GetCPUDescriptorHandleForHeapStart();
-	
+
 	for (int i = 0; i < GBUFFER_SIZE; i++)
 	{
 		command->ClearRenderTargetView(m_gBufferRtvHeap->getCPUHandle(i), m_clearColor.data(), 0, nullptr);
@@ -446,12 +602,12 @@ void DefferdTest::MakeCommand(ComPtr<ID3D12GraphicsCommandList>& command)
 	command->RSSetViewports(1, &m_viewport);
 	command->RSSetScissorRects(1, &m_scissorRect);
 
-	ID3D12DescriptorHeap * heaps[] = { m_cbvsrvHeap->getRaw()};
+	ID3D12DescriptorHeap* heaps[] = { m_cbvsrvHeap->getRaw() };
 	command->SetDescriptorHeaps(_countof(heaps), heaps);
 
 	command->IASetPrimitiveTopology(D3D_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
 	auto vertexBufferView = m_vertexBuffer->getBufferView();
-	command->IASetVertexBuffers(0,1,&vertexBufferView);
+	command->IASetVertexBuffers(0, 1, &vertexBufferView);
 
 	auto indexBufferView = m_indexBuffer->getBufferView();
 	command->IASetIndexBuffer(&indexBufferView);
@@ -459,9 +615,81 @@ void DefferdTest::MakeCommand(ComPtr<ID3D12GraphicsCommandList>& command)
 	command->SetGraphicsRootDescriptorTable(0, m_lightBufferView);
 	command->SetGraphicsRootDescriptorTable(1, m_viewProjectionBufferViews[m_frameIndex]);
 	command->SetGraphicsRootDescriptorTable(2, m_materialBufferView);
-	command->SetGraphicsRootDescriptorTable(3,m_modelBufferView);
+	command->SetGraphicsRootDescriptorTable(3, m_modelBufferView);
+	command->SetGraphicsRootDescriptorTable(4, m_cbvsrvHeap->getGPUHandle(GBUFFER_SRV_START_INDEX));
 
 
-	command->DrawIndexedInstanced(m_indexBuffer->getCount(),1,0,0,0);
-	
+	command->DrawIndexedInstanced(m_indexBuffer->getCount(), 1, 0, 0, 0);
+}
+
+void DefferdTest::makeCommandLightPass(ComPtr<ID3D12GraphicsCommandList>& command)
+{
+	CD3DX12_CPU_DESCRIPTOR_HANDLE rtv(m_heapRtv->GetCPUDescriptorHandleForHeapStart(), m_frameIndex, m_rtvDescriptorSize);
+	command->OMSetRenderTargets(1, &rtv, FALSE,nullptr);
+
+	command->SetPipelineState(m_lightPassPipeline.Get());
+	command->SetGraphicsRootSignature(m_rootSignature.Get());
+
+	command->RSSetViewports(1, &m_viewport);
+	command->RSSetScissorRects(1, &m_scissorRect);
+
+	for (int i = 0; i < GBUFFER_SIZE; i++)
+	{
+		auto barrierToSRV = CD3DX12_RESOURCE_BARRIER::Transition(m_gBufferTexture.at(i).Get(), D3D12_RESOURCE_STATE_RENDER_TARGET, D3D12_RESOURCE_STATE_GENERIC_READ);
+		command->ResourceBarrier(1, &barrierToSRV);
+	}
+
+	auto barrierToSRVDepth = CD3DX12_RESOURCE_BARRIER::Transition(m_depthStencil.Get(), D3D12_RESOURCE_STATE_DEPTH_WRITE, D3D12_RESOURCE_STATE_GENERIC_READ);
+	command->ResourceBarrier(1, &barrierToSRVDepth);
+
+	command->SetGraphicsRootDescriptorTable(0, m_lightBufferView);
+	command->SetGraphicsRootDescriptorTable(1, m_viewProjectionBufferViews[m_frameIndex]);
+	command->SetGraphicsRootDescriptorTable(2, m_materialBufferView);
+	command->SetGraphicsRootDescriptorTable(3, m_modelBufferView);
+	command->SetGraphicsRootDescriptorTable(4, m_cbvsrvHeap->getGPUHandle(GBUFFER_SRV_START_INDEX));
+
+	command->IASetPrimitiveTopology(D3D_PRIMITIVE_TOPOLOGY_TRIANGLESTRIP);
+	auto vertexBufferView = m_screenQuadVertex->getBufferView();
+	command->IASetVertexBuffers(0, 1, &vertexBufferView);
+	command->DrawInstanced(4, 1, 0, 0);
+
+	for (int i = 0; i < GBUFFER_SIZE; i++)
+	{
+		auto barrierToRTV = CD3DX12_RESOURCE_BARRIER::Transition(m_gBufferTexture.at(i).Get(), D3D12_RESOURCE_STATE_GENERIC_READ, D3D12_RESOURCE_STATE_RENDER_TARGET);
+		command->ResourceBarrier(1, &barrierToRTV);
+	}
+
+	auto barrierToRTVDepth = CD3DX12_RESOURCE_BARRIER::Transition(m_depthStencil.Get(), D3D12_RESOURCE_STATE_GENERIC_READ, D3D12_RESOURCE_STATE_DEPTH_WRITE);
+	command->ResourceBarrier(1, &barrierToRTVDepth);
+}
+
+void DefferdTest::prepare()
+{
+	createSphereVertices();
+	createSphereIndices();
+	createScreenQuad();
+	compileShader();
+	createRootSigunature();
+	//createPipeLine();
+	createGBufferPipeLine();
+	createLightPassPipeLine();
+	createCbvHeap();
+	createLight();
+	createViewProjection();
+	createMaterial();
+	createModel();
+	createGBuferRTV();
+	createDepthSRV();
+}
+
+void DefferdTest::cleanup()
+{
+
+}
+
+void DefferdTest::MakeCommand(ComPtr<ID3D12GraphicsCommandList>& command)
+{
+
+	makeCommandGBufferPass(command);
+	makeCommandLightPass(command);
 }

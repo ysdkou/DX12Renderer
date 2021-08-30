@@ -2,7 +2,7 @@
 #include <assert.h>
 namespace MyDX12
 {
-	IndexBufferBuilder& IndexBufferBuilder::setSize(UINT size)
+	IndexBufferBuilder& IndexBufferBuilder::setSizeInBytes(UINT size)
 	{
 		m_checkFlag.set(SIZE);
 		m_size = size;

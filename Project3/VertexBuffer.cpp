@@ -5,7 +5,7 @@ namespace MyDX12
 	VertexBufferBuilder::VertexBufferBuilder() :m_size(0), m_stride(0), m_device(nullptr), m_initialValue(nullptr)
 	{
 	}
-	VertexBufferBuilder& VertexBufferBuilder::setSize(UINT size)
+	VertexBufferBuilder& VertexBufferBuilder::setSizeInBytes(UINT size)
 	{
 		m_checkFlag.set(SIZE);
 		m_size = size;

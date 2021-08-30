@@ -1,10 +1,12 @@
 struct VSInput
 {
     float4 Position : POSITION;
+    float4 Normal : NORMAL;
 };
 struct VSOutput
 {
     float4 Position : SV_POSITION;
+    float4 Normal : NORMAL;
 };
 cbuffer VP : register(b1)
 {
@@ -23,5 +25,6 @@ VSOutput main(VSInput input)
     VSOutput result = (VSOutput) 0;
     float4x4 mvpMatrix = mul(model, mul(view, projection));
     result.Position = mul(input.Position, mvpMatrix);
+    result.Normal = input.Normal;
     return result;
 }

@@ -24,6 +24,7 @@ private:
 	struct Vertex
 	{
 		DirectX::XMFLOAT3 position;
+		DirectX::XMFLOAT3 normal;
 	};
 	struct LightCb
 	{
@@ -53,13 +54,20 @@ private:
 
 	std::unique_ptr<MyDX12::IndexBuffer> m_indexBuffer;
 	std::unique_ptr<MyDX12::VertexBuffer> m_vertexBuffer;
+	size_t m_vertSize;
+
+	std::unique_ptr<MyDX12::VertexBuffer> m_screenQuadVertex;
 
 	std::array<ComPtr<ID3D12Resource>, 3> m_gBufferTexture;
 
-	ComPtr<ID3DBlob> m_vs, m_ps;
+	ComPtr<ID3DBlob> m_gBufferVS, m_gBufferPS;
+	ComPtr<ID3DBlob> m_lightPassVS, m_lightPassPS;
+
 	ComPtr<ID3D12RootSignature> m_rootSignature;
 	ComPtr<ID3D12PipelineState> m_basePipeline;
 	ComPtr<ID3D12PipelineState> m_gBufferPipeline;
+	ComPtr<ID3D12PipelineState> m_lightPassPipeline;
+
 
 
 
@@ -104,8 +112,11 @@ private:
 	std::array<float, 4> m_clearColor = { 0.0,0.0,0.0,0.0 };
 
 
-	void createVertices();
-	void createIndices();
+	void createBoxVertices();
+	void createBoxIndices();
+	void createSphereVertices();
+	void createSphereIndices();
+	void createScreenQuad();
 	void createCbvHeap();
 	void createLight();
 	void createViewProjection();
@@ -117,10 +128,14 @@ private:
 	void createGBuferRTV();
 	void createDepthSRV();
 	void createGBufferPipeLine();
+	void createLightPassPipeLine();
 	
+	void makeCommandGBufferPass(ComPtr<ID3D12GraphicsCommandList>& command);
+	void makeCommandLightPass(ComPtr<ID3D12GraphicsCommandList>& command);
 public:
 	virtual void prepare()override;
 	virtual void cleanup() override;
 	virtual void MakeCommand(ComPtr<ID3D12GraphicsCommandList>& command)override;
+	
 };
 

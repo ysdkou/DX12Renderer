@@ -25,7 +25,7 @@ namespace MyDX12
 
 	public:
 		VertexBufferBuilder();
-		VertexBufferBuilder& setSize(UINT size);
+		VertexBufferBuilder& setSizeInBytes(UINT size);
 		VertexBufferBuilder& setStride(UINT stride);
 		VertexBufferBuilder& setInitialValue(const void* value);
 		VertexBufferBuilder& setDevice(ID3D12Device* device);

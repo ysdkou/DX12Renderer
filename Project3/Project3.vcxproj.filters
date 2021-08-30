@@ -97,6 +97,12 @@
     <FxCompile Include="GBufferPassPixel.hlsl">
       <Filter>ヘッダー ファイル</Filter>
     </FxCompile>
+    <FxCompile Include="LightPassPixel.hlsl">
+      <Filter>ヘッダー ファイル</Filter>
+    </FxCompile>
+    <FxCompile Include="LightPassVertex.hlsl">
+      <Filter>ヘッダー ファイル</Filter>
+    </FxCompile>
   </ItemGroup>
   <ItemGroup>
     <None Include="BRDF.hlsli">
