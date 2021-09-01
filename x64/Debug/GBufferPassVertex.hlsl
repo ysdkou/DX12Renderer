@@ -10,8 +10,8 @@ struct VSOutput
 };
 cbuffer VP : register(b1)
 {
-    float4x4 view;
-    float4x4 projection;
+    float4x4 PV;
+    float4x4 invPV;
     float3 cameraPos;
 }
 
@@ -19,12 +19,13 @@ cbuffer VP : register(b1)
 cbuffer Model : register(b3)
 {
     float4x4 model;
+    float4x4 forNormal;
 }
 VSOutput main(VSInput input)
 {
     VSOutput result = (VSOutput) 0;
-    float4x4 mvpMatrix = mul(model, mul(view, projection));
+    float4x4 mvpMatrix = mul(model, PV);
     result.Position = mul(input.Position, mvpMatrix);
-    result.Normal = input.Normal;
+    result.Normal = mul(input.Normal,forNormal);
     return result;
 }

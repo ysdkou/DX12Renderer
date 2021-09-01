@@ -31,11 +31,11 @@ private:
 		DirectX::XMFLOAT3 direction;
 		DirectX::XMFLOAT3 color;
 	};
-
+	//アライメントの問題でcameraPosを真ん中に持ってくると正しく値が渡せない
 	struct ViewProjectionCb
 	{
-		DirectX::XMFLOAT4X4 view;
-		DirectX::XMFLOAT4X4 projection;
+		DirectX::XMFLOAT4X4 PV;
+		DirectX::XMFLOAT4X4 inversePV;
 		DirectX::XMFLOAT3 cameraPos;
 	};
 
@@ -50,6 +50,8 @@ private:
 	struct ModelCb
 	{
 		DirectX::XMFLOAT4X4 model;
+		DirectX::XMFLOAT4X4 forNormal;
+
 	};
 
 	std::unique_ptr<MyDX12::IndexBuffer> m_indexBuffer;

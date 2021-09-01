@@ -24,8 +24,8 @@ LRESULT CALLBACK WindowProcedure(HWND hwnd, UINT msg, WPARAM wparam, LPARAM lpar
 
 int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE, LPSTR, int nCmdShow)
 {
-	constexpr int WINDOW_WIDTH = 480;
-	constexpr int WINDOW_HEGHT = 360;
+	constexpr int WINDOW_WIDTH = 680;
+	constexpr int WINDOW_HEGHT = WINDOW_WIDTH*3/4;
 
 	DefferdTest theApp;
 

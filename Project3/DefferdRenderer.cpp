@@ -1,4 +1,32 @@
 #include "DefferdRenderer.h"
+inline DirectX::XMFLOAT4X4 GMathMF(DirectX::XMMATRIX& mat)
+{
+
+	DirectX::XMFLOAT4X4 val;
+	DirectX::XMStoreFloat4x4(&val, mat);
+	return val;
+
+}
+
+inline void PrintF4x4(DirectX::XMFLOAT4X4 m,std::string_view name = std::string_view())
+{
+	using namespace DirectX;
+
+
+	std::string top = std::to_string(m._11) + ',' + std::to_string(m._12) + ',' +  std::to_string(m._13) + ',' + std::to_string(m._14) + '\n';
+	std::string second = std::to_string(m._21) + ',' + std::to_string(m._22) + ',' +std::to_string(m._23) + ',' +std::to_string(m._24) + '\n';
+	std::string third = std::to_string(m._31) + ',' + std::to_string(m._32) + ',' +std::to_string(m._33) + ',' +std::to_string(m._34) + '\n';
+	std::string fourth = std::to_string(m._41) + ',' + std::to_string(m._42) + ',' +std::to_string(m._43) + ',' +std::to_string(m._44) + '\n';
+
+	std::string output = name.empty() ? top + second + third + fourth : std::string(name) + '\n' + top + second + third + fourth;
+	OutputDebugStringA(output.c_str());
+
+}
+inline DirectX::XMMATRIX GMathFM(DirectX::XMFLOAT4X4& mat)
+{
+	return XMLoadFloat4x4(&mat);
+}
+
 void DefferdTest::createCbvHeap()
 {
 	//CBV
@@ -15,7 +43,7 @@ void DefferdTest::createCbvHeap()
 }
 void DefferdTest::createLight()
 {
-	LightCb light = { {-1.0f,0.0f,0.0f},{1.0f,1.0f,1.0f} };
+	LightCb light = { {-1.0f,1.0f,-1.0f},{10.0f,10.0f,10.0f} };
 
 	MyDX12::ConstantBuffer::Builder builder;
 	builder.seDevice(m_device.Get()).
@@ -33,7 +61,15 @@ void DefferdTest::createModel()
 	using namespace DirectX;
 
 	ModelCb model{};
-	XMStoreFloat4x4(&model.model, XMMatrixRotationAxis(XMVectorSet(0.0f, 1.0f, 0.0f, 0.0f), XMConvertToRadians(45.0f)));
+
+	auto transform = XMMatrixRotationAxis(XMVectorSet(0.0f, 1.0f, 0.0f, 0.0f), XMConvertToRadians(45.0f));
+	XMStoreFloat4x4(&model.model, transform);
+
+	transform.r[3] = XMVectorSet(0,0,0,1);
+
+	auto forNormal = XMMatrixTranspose(XMMatrixInverse(nullptr, transform));
+
+	XMStoreFloat4x4(&model.forNormal, forNormal);
 
 	MyDX12::ConstantBuffer::Builder builder;
 	builder.seDevice(m_device.Get()).
@@ -48,7 +84,7 @@ void DefferdTest::createModel()
 void DefferdTest::createMaterial() 
 {
 
-	MaterialCb material = { {0.9f,0.0f,0.0f},1.0f,1.0f,1.0f };
+	MaterialCb material = { {1.0f,0.0f,0.0f},0.3f,0.5f,1.0f };
 
 	MyDX12::ConstantBuffer::Builder builder;
 	builder.seDevice(m_device.Get()).
@@ -71,17 +107,44 @@ void DefferdTest::createViewProjection()
 
 		//各行列のセット.
 		ViewProjectionCb vp;
-		auto eyePos = XMVectorSet(0.0f, 3.0f, -5.0f, 0.0f);
+		auto eyePos = XMVectorSet(0.0f, 0.0f, -5.0f, 0.0f);
 		XMStoreFloat3(&vp.cameraPos, eyePos);
 		auto mtxView = XMMatrixLookAtLH(
 			eyePos,
 			XMVectorSet(0.0f, 0.0f, 0.0f, 0.0f),
 			XMVectorSet(0.0f, 1.0f, 0.0f, 0.0f)
 		);
-		auto mtxProj = XMMatrixPerspectiveFovLH(XMConvertToRadians(45.0f), 480.0f / 360.0f, 0.1f, 100.0f);
-		XMStoreFloat4x4(&vp.view, XMMatrixTranspose(mtxView));
-		XMStoreFloat4x4(&vp.projection, XMMatrixTranspose(mtxProj));
-		;
+		auto mtxProj = XMMatrixPerspectiveFovLH(XMConvertToRadians(45.0f), static_cast<float>(m_width) / static_cast<float>(m_height), 0.1f, 100.0f);
+		/*XMStoreFloat4x4(&vp.view, XMMatrixTranspose(mtxView));
+		XMStoreFloat4x4(&vp.projection, XMMatrixTranspose(mtxProj));*/
+
+		XMFLOAT4X4 matScreen(2.0f / static_cast<float>(m_width), 0, 0, 0, 0, -2.0f / static_cast<float>(m_height), 0, 0, 0, 0, 1, 0, -1, 1, 0, 1);
+		PrintF4x4(matScreen, "Screen");
+		
+		XMStoreFloat4x4(&vp.PV, XMMatrixTranspose(mtxView * mtxProj));
+		
+		auto detView = XMMatrixDeterminant(mtxView);
+		auto detProj = XMMatrixDeterminant(mtxProj);
+		auto invPV = XMMatrixInverse(&detProj, mtxProj) *XMMatrixInverse(&detView, mtxView);
+		auto PV = mtxView * mtxProj;
+
+		auto Identity = PV * invPV;
+
+		XMFLOAT4X4 identityFF{};
+
+		XMStoreFloat4x4(&identityFF, Identity);
+
+		PrintF4x4(identityFF, "identity");
+		XMStoreFloat4x4(&identityFF, PV);
+		PrintF4x4(identityFF, "view - projection");
+		XMStoreFloat4x4(&identityFF, invPV);
+		PrintF4x4(identityFF, "int view - projection");
+
+
+
+		auto fromDepth = XMMatrixTranspose(GMathFM(matScreen)*invPV) ;
+		XMStoreFloat4x4(&vp.inversePV,fromDepth);
+
 		MyDX12::ConstantBuffer::Builder builder;
 		builder.seDevice(m_device.Get()).
 			setSizeAndValueFromInstance(vp);

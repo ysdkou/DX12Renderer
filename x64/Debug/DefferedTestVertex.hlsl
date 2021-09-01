@@ -6,9 +6,9 @@ struct VSOutput {
 };
 cbuffer VP:register(b1)
 {
-	float4x4 world;
 	float4x4 view;
 	float4x4 projection;
+    float3 cameraPos;
 }
 cbuffer Model : register(b3)
 {

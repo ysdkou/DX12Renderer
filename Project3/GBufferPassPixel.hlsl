@@ -26,8 +26,8 @@ PSOutput main(VSOutput input)
     //UNORM
     output.AlbedoRoughness = float4(albedo, roughness);
     //SNORM
-    output.NormalMetallic = float4(0, 1.0, 0, 1);
+    output.NormalMetallic = float4(normalize(input.Normal.xyz), (metallic - 0.5)*2.0);
     //UNORM
-    output.AO = float4(0,0,1.0,1.0);
+    output.AO = float4(ao,0,0.0,0.0);
     return output;
 }

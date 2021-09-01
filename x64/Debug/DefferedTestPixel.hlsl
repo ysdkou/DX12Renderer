@@ -1,6 +1,12 @@
 struct VSOutput {
 	float4 Position:SV_POSITION;
 };
+cbuffer VP : register(b1)
+{
+    float3 cameraPos;
+    float4x4 view;
+    float4x4 projection;
+};
 
 cbuffer Light: register(b0) {
 	float3 dir;
