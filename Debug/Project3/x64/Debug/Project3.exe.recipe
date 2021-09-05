@@ -1,0 +1,30 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project>
+  <ProjectOutputs>
+    <ProjectOutput>
+      <FullPath>C:\Users\neat2\source\repos\DX12Renderer\x64\Debug\Project3.exe</FullPath>
+    </ProjectOutput>
+  </ProjectOutputs>
+  <ContentFiles>
+    <ContentFile>
+      <FullPath>C:\Users\neat2\source\repos\DX12Renderer\x64\Debug\DefferedTestVertex.cso</FullPath>
+    </ContentFile>
+    <ContentFile>
+      <FullPath>C:\Users\neat2\source\repos\DX12Renderer\x64\Debug\DefferedTestPixel.cso</FullPath>
+    </ContentFile>
+    <ContentFile>
+      <FullPath>C:\Users\neat2\source\repos\DX12Renderer\x64\Debug\GBufferPassPixel.cso</FullPath>
+    </ContentFile>
+    <ContentFile>
+      <FullPath>C:\Users\neat2\source\repos\DX12Renderer\x64\Debug\GBufferPassVertex.cso</FullPath>
+    </ContentFile>
+    <ContentFile>
+      <FullPath>C:\Users\neat2\source\repos\DX12Renderer\x64\Debug\LightPassPixel.cso</FullPath>
+    </ContentFile>
+    <ContentFile>
+      <FullPath>C:\Users\neat2\source\repos\DX12Renderer\x64\Debug\LightPassVertex.cso</FullPath>
+    </ContentFile>
+  </ContentFiles>
+  <SatelliteDlls />
+  <NonRecipeFileRefs />
+</Project>
