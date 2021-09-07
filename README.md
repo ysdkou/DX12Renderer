@@ -28,6 +28,9 @@ UE4で採用されている、物理ベースの計算モデルを採用して�
 
 https://learnopengl.com/PBR/Theory
 
+## ソースコード概説
+主な描画処理はDefferedRenderer.cppで行っています。
+
 ## 動画
 
 [![](https://img.youtube.com/vi/jouK1hIypUA/0.jpg)](https://www.youtube.com/watch?v=jouK1hIypUA)
