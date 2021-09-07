@@ -28,3 +28,9 @@ UE4で採用されている、物理ベースの計算モデルを採用して�
 
 https://learnopengl.com/PBR/Theory
 
+## 動画
+
+[![](https://img.youtube.com/vi/jouK1hIypUA/0.jpg)](https://www.youtube.com/watch?v=jouK1hIypUA)
+
+### 以下のチャンネルでその他デモ作品もアップロードしています
+[link](https://www.youtube.com/channel/UC01yHOlNz_1FV1cxvnLI26A)
