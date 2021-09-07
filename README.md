@@ -31,6 +31,7 @@ https://learnopengl.com/PBR/Theory
 ## ソースコード概説
 主な描画処理はDefferedRenderer.cppで行っています。
 シェーダーは以下の構成となります。
+
 GBBufferパスシェーダー:GBufferPassPixel.hlsl GBufferPassVertex.hlsl
 Lightパスシェーダー:LightPassPixel.hlsl LightPassVertex.hlsl
 ## 動画
