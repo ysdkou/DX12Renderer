@@ -5,18 +5,18 @@ DX12で制作したレンダリングデモ作品です。
 
 ## GBuffer構成
 ### GBuffer0
-Format:R8G8B8A8Unorm
-RGB:Albedo
+Format:R8G8B8A8Unorm  
+RGB:Albedo  
 A:Rougness
 
 ### GBuffer1
-Format:R8G8B8A8Unorm
-RGB:WorldNormal
+Format:R8G8B8A8Unorm  
+RGB:WorldNormal 
 A:Metallic
 
 ### GBuffer2
-Format:R8G8B8A8Unorm
-R:AO(ammbient)
+Format:R8G8B8A8Unorm 
+R:AO(ammbient)  
 GBA:未使用
 
 ### その他
@@ -30,9 +30,9 @@ https://learnopengl.com/PBR/Theory
 
 ## ソースコード概説
 主な描画処理はDefferedRenderer.cppで行っています。
-シェーダーは以下の構成となります。
+シェーダーは以下の構成となります。  
 
-GBBufferパスシェーダー:GBufferPassPixel.hlsl GBufferPassVertex.hlsl
+GBBufferパスシェーダー:GBufferPassPixel.hlsl GBufferPassVertex.hlsl  
 Lightパスシェーダー:LightPassPixel.hlsl LightPassVertex.hlsl
 ## 動画
 
