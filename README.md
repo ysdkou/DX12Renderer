@@ -32,5 +32,8 @@ https://learnopengl.com/PBR/Theory
 
 [![](https://img.youtube.com/vi/jouK1hIypUA/0.jpg)](https://www.youtube.com/watch?v=jouK1hIypUA)
 
+## 実行ファイル
+x64\Debug
+
 ### 以下のチャンネルでその他デモ作品もアップロードしています
 [link](https://www.youtube.com/channel/UC01yHOlNz_1FV1cxvnLI26A)
