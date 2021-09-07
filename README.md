@@ -1,4 +1,4 @@
-# DX12DefferedRendringDemo
+# DX12DefferedRenderingDemo
 DX12で制作したレンダリングデモ作品です。
 
 ディファードシェーディング、物理ベースの計算モデルを採用しています。
