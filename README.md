@@ -16,7 +16,7 @@ A:Metallic
 
 ### GBuffer2
 Format:R8G8B8A8Unorm 
-R:AO(ammbient)  
+R:AO(ammbient)   
 GBA:未使用
 
 ### その他
@@ -32,7 +32,7 @@ https://learnopengl.com/PBR/Theory
 主な描画処理はDefferedRenderer.cppで行っています。
 シェーダーは以下の構成となります。  
 
-GBBufferパスシェーダー:GBufferPassPixel.hlsl GBufferPassVertex.hlsl  
+GBufferパスシェーダー:GBufferPassPixel.hlsl GBufferPassVertex.hlsl  
 Lightパスシェーダー:LightPassPixel.hlsl LightPassVertex.hlsl
 ## 動画
 
