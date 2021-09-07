@@ -30,7 +30,9 @@ https://learnopengl.com/PBR/Theory
 
 ## 動画
 
-link:[youtube](https://youtu.be/jouK1hIypUA)
+[link](https://youtu.be/jouK1hIypUA)
 
 [![](https://img.youtube.com/vi/jouK1hIypUA/0.jpg)](https://www.youtube.com/watch?v=jouK1hIypUA)
 
+### 以下のチャンネルでその他デモ作品もアップロードしています
+[link](https://www.youtube.com/channel/UC01yHOlNz_1FV1cxvnLI26A)
