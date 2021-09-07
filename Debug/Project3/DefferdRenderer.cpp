@@ -29,10 +29,7 @@ DirectX::XMMATRIX Float4x4ToMatrix(DirectX::XMFLOAT4X4& mat)
 
 void DefferdTest::createCbvHeap()
 {
-	//CBV
-	//0,Light
-	//1,2 MVP (frame count•ª)
-	//3 Material
+	//CBV SRV
 	MyDX12::DescriptorHeap::Builder builder;
 	builder.setDevice(m_device.Get()).
 		setHeapType(D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV).
@@ -40,6 +37,17 @@ void DefferdTest::createCbvHeap()
 		setFlagsShaderVisible();
 
 	m_cbvsrvHeap = MyDX12::DescriptorHeap::Create(builder);
+}
+void DefferdTest::createRTVHeap()
+{
+	MyDX12::DescriptorHeap::Builder builder;
+	//DescriptorHeap¶¬
+	builder.setDevice(m_device.Get()).
+		setHeapType(D3D12_DESCRIPTOR_HEAP_TYPE_RTV).
+		setSize(3).
+		setFlagsNone();
+
+	m_gBufferRtvHeap = MyDX12::DescriptorHeap::Create(builder);
 }
 void DefferdTest::createLight()
 {
@@ -471,14 +479,7 @@ void DefferdTest::createGBuferRTV()
 	//2 Normal,metallic
 	//3 ao
 
-	MyDX12::DescriptorHeap::Builder builder;
-	//DescriptorHeap¶¬
-	builder.setDevice(m_device.Get()).
-		setHeapType(D3D12_DESCRIPTOR_HEAP_TYPE_RTV).
-		setSize(3).
-		setFlagsNone();
-
-	m_gBufferRtvHeap = MyDX12::DescriptorHeap::Create(builder);
+	m_gBufferTexture.resize(GBUFFER_SIZE);
 
 	//GBufferTexture‚ÌResource¶¬
 	CD3DX12_HEAP_PROPERTIES heapProperty(D3D12_HEAP_TYPE_DEFAULT);
@@ -720,6 +721,7 @@ void DefferdTest::prepare()
 	createGBufferPipeLine();
 	createLightPassPipeLine();
 	createCbvHeap();
+	createRTVHeap();
 	createLight();
 	createViewProjection();
 	createMaterial();
@@ -730,7 +732,12 @@ void DefferdTest::prepare()
 
 void DefferdTest::cleanup()
 {
-
+	auto index = m_swapchain->GetCurrentBackBufferIndex();
+	auto fence = m_frameFences[index];
+	auto value = ++m_frameFenceValue[index];
+	m_commandQueue->Signal(fence.Get(), value);
+	fence->SetEventOnCompletion(value, m_fenceWaitEvent);
+	WaitForSingleObject(m_fenceWaitEvent, GPU_WAIT_TIME_OUT);
 }
 
 void DefferdTest::MakeCommand(ComPtr<ID3D12GraphicsCommandList>& command)
