@@ -1,5 +1,5 @@
 #include "DefferdRenderer.h"
-inline DirectX::XMFLOAT4X4 GMathMF(DirectX::XMMATRIX& mat)
+DirectX::XMFLOAT4X4 MatrixToFloat4x4(DirectX::XMMATRIX& mat)
 {
 
 	DirectX::XMFLOAT4X4 val;
@@ -8,7 +8,7 @@ inline DirectX::XMFLOAT4X4 GMathMF(DirectX::XMMATRIX& mat)
 
 }
 
-inline void PrintF4x4(DirectX::XMFLOAT4X4 m,std::string_view name = std::string_view())
+void PrintF4x4(DirectX::XMFLOAT4X4 m,std::string_view name = std::string_view())
 {
 	using namespace DirectX;
 
@@ -22,7 +22,7 @@ inline void PrintF4x4(DirectX::XMFLOAT4X4 m,std::string_view name = std::string_
 	OutputDebugStringA(output.c_str());
 
 }
-inline DirectX::XMMATRIX GMathFM(DirectX::XMFLOAT4X4& mat)
+DirectX::XMMATRIX Float4x4ToMatrix(DirectX::XMFLOAT4X4& mat)
 {
 	return XMLoadFloat4x4(&mat);
 }
@@ -43,7 +43,7 @@ void DefferdTest::createCbvHeap()
 }
 void DefferdTest::createLight()
 {
-	LightCb light = { {-1.0f,1.0f,-1.0f},{10.0f,10.0f,10.0f} };
+	LightCb light = { {-1.0f,1.0f,-1.0f},{5.0f,5.0f,5.0f} };
 
 	MyDX12::ConstantBuffer::Builder builder;
 	builder.seDevice(m_device.Get()).
@@ -60,42 +60,68 @@ void DefferdTest::createModel()
 {
 	using namespace DirectX;
 
-	ModelCb model{};
+	m_modelBufferViews.resize(MODEL_BUFFER_SIZE);
+	m_modelBuffers.resize(MODEL_BUFFER_SIZE);
+	for (int row = 0; row < SPHERE_ROW; row++)
+	{
+		for (int col = 0; col < SPHERE_COL; col++)
+		{
+			ModelCb model{};
 
-	auto transform = XMMatrixRotationAxis(XMVectorSet(0.0f, 1.0f, 0.0f, 0.0f), XMConvertToRadians(45.0f));
-	XMStoreFloat4x4(&model.model, transform);
+			auto transform = XMMatrixTranslation(
+				static_cast<float>(col - (SPHERE_COL / 2)) * SPACE,
+				static_cast<float>(row - (SPHERE_ROW / 2)) * SPACE,
+					0);
 
-	transform.r[3] = XMVectorSet(0,0,0,1);
+			XMStoreFloat4x4(&model.model,XMMatrixTranspose(transform));
 
-	auto forNormal = XMMatrixTranspose(XMMatrixInverse(nullptr, transform));
+			transform.r[3] = XMVectorSet(0, 0, 0, 1);
 
-	XMStoreFloat4x4(&model.forNormal, forNormal);
+			auto forNormal = XMMatrixTranspose(XMMatrixInverse(nullptr, transform));
 
-	MyDX12::ConstantBuffer::Builder builder;
-	builder.seDevice(m_device.Get()).
-		setSizeAndValueFromInstance(model);
-	m_modelBuffer = MyDX12::ConstantBuffer::Create(builder);
+			XMStoreFloat4x4(&model.forNormal, XMMatrixTranspose(forNormal));
 
-	auto desc = m_modelBuffer->createViewDesc();
-	m_cbvsrvHeap->createConstantBufferView(&desc, MODEL_BUFFER_START_INDEX);
+			int i = SPHERE_ROW * row + col;
+			MyDX12::ConstantBuffer::Builder builder;
+			builder.seDevice(m_device.Get()).
+				setSizeAndValueFromInstance(model);
+			m_modelBuffers.at(i) = MyDX12::ConstantBuffer::Create(builder);
 
-	m_modelBufferView = m_cbvsrvHeap->getGPUHandle(MODEL_BUFFER_START_INDEX);
+			auto desc = m_modelBuffers.at(i)->createViewDesc();
+			m_cbvsrvHeap->createConstantBufferView(&desc, MODEL_BUFFER_START_INDEX + i);
+
+			m_modelBufferViews.at(i) = m_cbvsrvHeap->getGPUHandle(MODEL_BUFFER_START_INDEX + i);
+		}
+	}
 }
+
+
 void DefferdTest::createMaterial() 
 {
+	m_materialBufferViews.resize(MATERIAL_BUFFER_SIZE);
+	m_materialBuffers.resize(MATERIAL_BUFFER_SIZE);
+	for (int row = 0; row < SPHERE_ROW; row++)
+	{
+		float metallic = static_cast<float>(row) / static_cast<float>(SPHERE_ROW);
+		for (int col = 0; col < SPHERE_COL; col++)
+		{
+			
+			float roughness = static_cast<float>(col) / static_cast<float>(SPHERE_COL);
+			MaterialCb material = { {1.0f,0.0f,0.0f},metallic,roughness,1.0f };
 
-	MaterialCb material = { {1.0f,0.0f,0.0f},0.3f,0.5f,1.0f };
+			int i = SPHERE_ROW * row + col;
+			MyDX12::ConstantBuffer::Builder builder;
+			builder.seDevice(m_device.Get()).
+				setSizeAndValueFromInstance(material);
+			m_materialBuffers.at(i) = MyDX12::ConstantBuffer::Create(builder);
 
-	MyDX12::ConstantBuffer::Builder builder;
-	builder.seDevice(m_device.Get()).
-		setSizeAndValueFromInstance(material);
-	m_materialBuffer = MyDX12::ConstantBuffer::Create(builder);
+			auto desc = m_materialBuffers.at(i)->createViewDesc();
 
-	auto desc = m_materialBuffer->createViewDesc();
+			m_cbvsrvHeap->createConstantBufferView(&desc, MATERIAL_BUFFER_START_INDEX + i);
 
-	m_cbvsrvHeap->createConstantBufferView(&desc, MATERIAL_BUFFER_START_INDEX);
-
-	m_materialBufferView = m_cbvsrvHeap->getGPUHandle(MATERIAL_BUFFER_START_INDEX);
+			m_materialBufferViews.at(i) = m_cbvsrvHeap->getGPUHandle(MATERIAL_BUFFER_START_INDEX + i);
+		}
+	}
 }
 void DefferdTest::createViewProjection()
 {
@@ -107,7 +133,7 @@ void DefferdTest::createViewProjection()
 
 		//各行列のセット.
 		ViewProjectionCb vp;
-		auto eyePos = XMVectorSet(0.0f, 0.0f, -5.0f, 0.0f);
+		auto eyePos = XMVectorSet(0.0f, 0.0f, -22.0f, 0.0f);
 		XMStoreFloat3(&vp.cameraPos, eyePos);
 		auto mtxView = XMMatrixLookAtLH(
 			eyePos,
@@ -142,7 +168,7 @@ void DefferdTest::createViewProjection()
 
 
 
-		auto fromDepth = XMMatrixTranspose(GMathFM(matScreen)*invPV) ;
+		auto fromDepth = XMMatrixTranspose(Float4x4ToMatrix(matScreen)*invPV) ;
 		XMStoreFloat4x4(&vp.inversePV,fromDepth);
 
 		MyDX12::ConstantBuffer::Builder builder;
@@ -437,50 +463,7 @@ void DefferdTest::compileShader()
 	}
 }
 
-void DefferdTest::createPipeLine()
-{
-	// インプットレイアウト
-	D3D12_INPUT_ELEMENT_DESC inputElementDesc[] = {
-	  { "POSITION", 0, DXGI_FORMAT_R32G32B32_FLOAT, 0, offsetof(Vertex, position), D3D12_INPUT_CLASSIFICATION_PER_VERTEX_DATA},
-	};
 
-
-	D3D12_GRAPHICS_PIPELINE_STATE_DESC psoDesc{};
-
-	psoDesc.VS = CD3DX12_SHADER_BYTECODE(m_gBufferVS.Get());
-	psoDesc.PS = CD3DX12_SHADER_BYTECODE(m_gBufferPS.Get());
-
-	psoDesc.BlendState = CD3DX12_BLEND_DESC(D3D12_DEFAULT);
-
-	auto rasterizerDesc =  CD3DX12_RASTERIZER_DESC(D3D12_DEFAULT);
-	rasterizerDesc.CullMode = D3D12_CULL_MODE_NONE;
-	psoDesc.RasterizerState = rasterizerDesc;
-		
-
-	psoDesc.NumRenderTargets = 1;
-	psoDesc.RTVFormats[0] = DXGI_FORMAT_R8G8B8A8_UNORM;
-	// デプスバッファのフォーマットを設定
-	psoDesc.DSVFormat = DXGI_FORMAT_D32_FLOAT;
-	auto depthStencilDesc = CD3DX12_DEPTH_STENCIL_DESC(D3D12_DEFAULT);
-	depthStencilDesc.DepthEnable = FALSE;
-	psoDesc.DepthStencilState = depthStencilDesc;
-
-	psoDesc.InputLayout = { inputElementDesc, _countof(inputElementDesc) };
-
-	// ルートシグネチャのセット
-	psoDesc.pRootSignature = m_rootSignature.Get();
-	psoDesc.PrimitiveTopologyType = D3D12_PRIMITIVE_TOPOLOGY_TYPE_TRIANGLE;
-	// マルチサンプル設定
-	psoDesc.SampleDesc = { 1,0 };
-	psoDesc.SampleMask = UINT_MAX; // これを忘れると絵が出ない＆警告も出ないので注意.
-
-	auto hr = m_device->CreateGraphicsPipelineState(&psoDesc, IID_PPV_ARGS(&m_basePipeline));
-
-	if (FAILED(hr))
-	{
-		throw std::runtime_error("CreateGraphicsPipelineState failed");
-	}
-}
 
 void DefferdTest::createGBuferRTV()
 {
@@ -675,15 +658,18 @@ void DefferdTest::makeCommandGBufferPass(ComPtr<ID3D12GraphicsCommandList>& comm
 	auto indexBufferView = m_indexBuffer->getBufferView();
 	command->IASetIndexBuffer(&indexBufferView);
 
-	command->SetGraphicsRootDescriptorTable(0, m_lightBufferView);
-	command->SetGraphicsRootDescriptorTable(1, m_viewProjectionBufferViews[m_frameIndex]);
-	command->SetGraphicsRootDescriptorTable(2, m_materialBufferView);
-	command->SetGraphicsRootDescriptorTable(3, m_modelBufferView);
-	command->SetGraphicsRootDescriptorTable(4, m_cbvsrvHeap->getGPUHandle(GBUFFER_SRV_START_INDEX));
+	for (int i = 0; i < MATERIAL_BUFFER_SIZE; i++)
+	{
+		command->SetGraphicsRootDescriptorTable(0, m_lightBufferView);
+		command->SetGraphicsRootDescriptorTable(1, m_viewProjectionBufferViews[m_frameIndex]);
+		command->SetGraphicsRootDescriptorTable(2, m_materialBufferViews.at(i));
+		command->SetGraphicsRootDescriptorTable(3, m_modelBufferViews.at(i));
+		command->SetGraphicsRootDescriptorTable(4, m_cbvsrvHeap->getGPUHandle(GBUFFER_SRV_START_INDEX));
 
-
-	command->DrawIndexedInstanced(m_indexBuffer->getCount(), 1, 0, 0, 0);
+		command->DrawIndexedInstanced(m_indexBuffer->getCount(), 1, 0, 0, 0);
+	}
 }
+
 
 void DefferdTest::makeCommandLightPass(ComPtr<ID3D12GraphicsCommandList>& command)
 {
@@ -707,8 +693,6 @@ void DefferdTest::makeCommandLightPass(ComPtr<ID3D12GraphicsCommandList>& comman
 
 	command->SetGraphicsRootDescriptorTable(0, m_lightBufferView);
 	command->SetGraphicsRootDescriptorTable(1, m_viewProjectionBufferViews[m_frameIndex]);
-	command->SetGraphicsRootDescriptorTable(2, m_materialBufferView);
-	command->SetGraphicsRootDescriptorTable(3, m_modelBufferView);
 	command->SetGraphicsRootDescriptorTable(4, m_cbvsrvHeap->getGPUHandle(GBUFFER_SRV_START_INDEX));
 
 	command->IASetPrimitiveTopology(D3D_PRIMITIVE_TOPOLOGY_TRIANGLESTRIP);
@@ -733,7 +717,6 @@ void DefferdTest::prepare()
 	createScreenQuad();
 	compileShader();
 	createRootSigunature();
-	//createPipeLine();
 	createGBufferPipeLine();
 	createLightPassPipeLine();
 	createCbvHeap();

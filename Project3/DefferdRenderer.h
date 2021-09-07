@@ -26,10 +26,11 @@ private:
 		DirectX::XMFLOAT3 position;
 		DirectX::XMFLOAT3 normal;
 	};
+
 	struct LightCb
 	{
-		DirectX::XMFLOAT3 direction;
-		DirectX::XMFLOAT3 color;
+		alignas(16) DirectX::XMFLOAT3 direction;
+		alignas(16) DirectX::XMFLOAT3 color;
 	};
 	//アライメントの問題でcameraPosを真ん中に持ってくると正しく値が渡せない
 	struct ViewProjectionCb
@@ -65,6 +66,9 @@ private:
 	ComPtr<ID3DBlob> m_gBufferVS, m_gBufferPS;
 	ComPtr<ID3DBlob> m_lightPassVS, m_lightPassPS;
 
+	std::unique_ptr<MyDX12::DescriptorHeap> m_cbvsrvHeap;
+	std::unique_ptr<MyDX12::DescriptorHeap> m_gBufferRtvHeap;
+
 	ComPtr<ID3D12RootSignature> m_rootSignature;
 	ComPtr<ID3D12PipelineState> m_basePipeline;
 	ComPtr<ID3D12PipelineState> m_gBufferPipeline;
@@ -72,15 +76,17 @@ private:
 
 
 
-
+	static constexpr int SPHERE_ROW = 7;
+	static constexpr int SPHERE_COL = 7;
+	static constexpr float SPACE = 2.5f;
 
 	static constexpr int LIGHT_BUFFER_START_INDEX = 0;
 	static constexpr int LIGHT_BUFFER_SIZE = 1;
 	static constexpr int VIEW_PROJECTION_BUFFER_START_INDEX = LIGHT_BUFFER_START_INDEX + LIGHT_BUFFER_SIZE;
 	static constexpr int MATERIAL_BUFFER_START_INDEX = VIEW_PROJECTION_BUFFER_START_INDEX + FRAME_BUFFER_COUNT;
-	static constexpr int MATERIAL_BUFFER_SIZE = 1;
+	static constexpr int MATERIAL_BUFFER_SIZE = SPHERE_ROW * SPHERE_COL;
 	static constexpr int MODEL_BUFFER_START_INDEX = MATERIAL_BUFFER_START_INDEX + MATERIAL_BUFFER_SIZE;
-	static constexpr int MODEL_BUFFER_SIZE = 1;
+	static constexpr int MODEL_BUFFER_SIZE = SPHERE_ROW*SPHERE_COL;
 	static constexpr int GBUFFER_SRV_START_INDEX = MODEL_BUFFER_START_INDEX + MODEL_BUFFER_SIZE;
 	static constexpr int GBUFFER_SIZE = 3;
 	static constexpr int DEPTH_BUFFER_SRV_START_INDEX = GBUFFER_SRV_START_INDEX + GBUFFER_SIZE;
@@ -89,19 +95,21 @@ private:
 
 	
 
-	std::unique_ptr<MyDX12::DescriptorHeap> m_cbvsrvHeap;
-	std::unique_ptr<MyDX12::DescriptorHeap> m_gBufferRtvHeap;
+
 
 	
 	std::unique_ptr<MyDX12::ConstantBuffer> m_lightBuffer;
 	std::vector<std::unique_ptr<MyDX12::ConstantBuffer>> m_viewProjectionBuffers;
-	std::unique_ptr<MyDX12::ConstantBuffer> m_materialBuffer;
-	std::unique_ptr<MyDX12::ConstantBuffer> m_modelBuffer;
+	std::vector<std::unique_ptr<MyDX12::ConstantBuffer>> m_materialBuffers;
+	std::vector<std::unique_ptr<MyDX12::ConstantBuffer>> m_modelBuffers;
 
 	D3D12_GPU_DESCRIPTOR_HANDLE m_lightBufferView;
 	std::vector<D3D12_GPU_DESCRIPTOR_HANDLE> m_viewProjectionBufferViews;
-	D3D12_GPU_DESCRIPTOR_HANDLE m_materialBufferView;
-	D3D12_GPU_DESCRIPTOR_HANDLE m_modelBufferView;
+	std::vector<D3D12_GPU_DESCRIPTOR_HANDLE> m_materialBufferViews;
+	std::vector<D3D12_GPU_DESCRIPTOR_HANDLE> m_modelBufferViews;
+
+	//D3D12_GPU_DESCRIPTOR_HANDLE m_materialBufferView;
+	//D3D12_GPU_DESCRIPTOR_HANDLE m_modelBufferView;
 
 	
 	
@@ -126,7 +134,6 @@ private:
 	void createModel();
 	void createRootSigunature();
 	void compileShader();
-	void createPipeLine();
 	void createGBuferRTV();
 	void createDepthSRV();
 	void createGBufferPipeLine();
