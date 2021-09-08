@@ -166,10 +166,8 @@
     <ClInclude Include="DX12App.h" />
     <ClInclude Include="DXGIFactory.h" />
     <ClInclude Include="IndexBuffer.h" />
-    <ClInclude Include="ScreenQuadRenderer.h" />
     <ClInclude Include="ShaderCompile.h" />
     <ClInclude Include="stb_image.h" />
-    <ClInclude Include="TriangleApp.h" />
     <ClInclude Include="VertexBuffer.h" />
   </ItemGroup>
   <ItemGroup>
@@ -180,23 +178,9 @@
     <ClCompile Include="DXGIFactory.cpp" />
     <ClCompile Include="IndexBuffer.cpp" />
     <ClCompile Include="main.cpp" />
-    <ClCompile Include="ScreenQuadRenderer.cpp" />
-    <ClCompile Include="TriangleApp.cpp" />
     <ClCompile Include="VertexBuffer.cpp" />
   </ItemGroup>
   <ItemGroup>
-    <FxCompile Include="DefferedTestVertex.hlsl">
-      <ShaderType Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">Vertex</ShaderType>
-      <ShaderType Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">Vertex</ShaderType>
-      <ShaderType Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">Vertex</ShaderType>
-      <ShaderType Condition="'$(Configuration)|$(Platform)'=='Release|x64'">Vertex</ShaderType>
-    </FxCompile>
-    <FxCompile Include="DefferedTestPixel.hlsl">
-      <ShaderType Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">Pixel</ShaderType>
-      <ShaderType Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">Pixel</ShaderType>
-      <ShaderType Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">Pixel</ShaderType>
-      <ShaderType Condition="'$(Configuration)|$(Platform)'=='Release|x64'">Pixel</ShaderType>
-    </FxCompile>
     <FxCompile Include="GBufferPassPixel.hlsl">
       <ShaderType Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">Pixel</ShaderType>
       <ShaderType Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">Pixel</ShaderType>

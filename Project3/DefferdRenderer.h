@@ -61,7 +61,7 @@ private:
 
 	std::unique_ptr<MyDX12::VertexBuffer> m_screenQuadVertex;
 
-	std::array<ComPtr<ID3D12Resource>, 3> m_gBufferTexture;
+	
 
 	ComPtr<ID3DBlob> m_gBufferVS, m_gBufferPS;
 	ComPtr<ID3DBlob> m_lightPassVS, m_lightPassPS;
@@ -102,6 +102,9 @@ private:
 	std::vector<std::unique_ptr<MyDX12::ConstantBuffer>> m_viewProjectionBuffers;
 	std::vector<std::unique_ptr<MyDX12::ConstantBuffer>> m_materialBuffers;
 	std::vector<std::unique_ptr<MyDX12::ConstantBuffer>> m_modelBuffers;
+	std::vector<ComPtr<ID3D12Resource>> m_gBufferTexture;
+
+	
 
 	D3D12_GPU_DESCRIPTOR_HANDLE m_lightBufferView;
 	std::vector<D3D12_GPU_DESCRIPTOR_HANDLE> m_viewProjectionBufferViews;
@@ -128,6 +131,7 @@ private:
 	void createSphereIndices();
 	void createScreenQuad();
 	void createCbvHeap();
+	void createRTVHeap();
 	void createLight();
 	void createViewProjection();
 	void createMaterial();

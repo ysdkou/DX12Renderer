@@ -2,6 +2,10 @@
 #include <Windows.h>
 #include <execution>
 #include <fstream>
+#include <chrono>
+#include <thread>
+
+
 
 template<class T>
 using ComPtr = Microsoft::WRL::ComPtr<T>;
@@ -60,6 +64,7 @@ void DX12App::createDevice(ComPtr<IDXGIFactory3>& factory)
 		//アダプタなかったらオンボードも検索
 		if (adapter.Get() == nullptr)
 		{
+			UINT adapterIndex = 0;
 			while (DXGI_ERROR_NOT_FOUND != factory->EnumAdapters1(adapterIndex, &adapter))
 			{
 				DXGI_ADAPTER_DESC1 desc{};
@@ -354,7 +359,9 @@ void DX12App::intialize(HWND hWnd)
 
 void DX12App::terminate()
 {
+	
 	waitPreviousFrame();
+	std::this_thread::sleep_for(std::chrono::microseconds(1000));
 	cleanup();
 }
 

@@ -13,6 +13,9 @@
       <UniqueIdentifier>{67DA6AB6-F800-4c08-8B7A-83BB121AAD01}</UniqueIdentifier>
       <Extensions>rc;ico;cur;bmp;dlg;rc2;rct;bin;rgs;gif;jpg;jpeg;jpe;resx;tiff;tif;png;wav;mfcribbon-ms</Extensions>
     </Filter>
+    <Filter Include="シェーダー">
+      <UniqueIdentifier>{9d8b7cfc-9810-4476-926b-712ab56d781a}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="DX12App.h">
@@ -25,12 +28,6 @@
       <Filter>ソース ファイル</Filter>
     </ClInclude>
     <ClInclude Include="DXGIFactory.h">
-      <Filter>ヘッダー ファイル</Filter>
-    </ClInclude>
-    <ClInclude Include="TriangleApp.h">
-      <Filter>ヘッダー ファイル</Filter>
-    </ClInclude>
-    <ClInclude Include="ScreenQuadRenderer.h">
       <Filter>ヘッダー ファイル</Filter>
     </ClInclude>
     <ClInclude Include="DefferdRenderer.h">
@@ -62,12 +59,6 @@
     <ClCompile Include="DXGIFactory.cpp">
       <Filter>ソース ファイル</Filter>
     </ClCompile>
-    <ClCompile Include="TriangleApp.cpp">
-      <Filter>ソース ファイル</Filter>
-    </ClCompile>
-    <ClCompile Include="ScreenQuadRenderer.cpp">
-      <Filter>ソース ファイル</Filter>
-    </ClCompile>
     <ClCompile Include="DefferdRenderer.cpp">
       <Filter>ソース ファイル</Filter>
     </ClCompile>
@@ -85,23 +76,17 @@
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
-    <FxCompile Include="DefferedTestVertex.hlsl">
-      <Filter>ヘッダー ファイル</Filter>
-    </FxCompile>
-    <FxCompile Include="DefferedTestPixel.hlsl">
-      <Filter>ヘッダー ファイル</Filter>
-    </FxCompile>
     <FxCompile Include="GBufferPassVertex.hlsl">
-      <Filter>ヘッダー ファイル</Filter>
+      <Filter>シェーダー</Filter>
     </FxCompile>
     <FxCompile Include="GBufferPassPixel.hlsl">
-      <Filter>ヘッダー ファイル</Filter>
-    </FxCompile>
-    <FxCompile Include="LightPassPixel.hlsl">
-      <Filter>ヘッダー ファイル</Filter>
+      <Filter>シェーダー</Filter>
     </FxCompile>
     <FxCompile Include="LightPassVertex.hlsl">
-      <Filter>ヘッダー ファイル</Filter>
+      <Filter>シェーダー</Filter>
+    </FxCompile>
+    <FxCompile Include="LightPassPixel.hlsl">
+      <Filter>シェーダー</Filter>
     </FxCompile>
   </ItemGroup>
   <ItemGroup>
