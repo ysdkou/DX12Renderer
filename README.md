@@ -29,6 +29,7 @@ UE4で採用されている、物理ベースの計算モデルを採用して�
 https://learnopengl.com/PBR/Theory
 
 ## ソースコード概説
+ソースはProject3以下に格納しています。
 主な描画処理はDefferedRenderer.cppで行っています。
 シェーダーは以下の構成となります。  
 
